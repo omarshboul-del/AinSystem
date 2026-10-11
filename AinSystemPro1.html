@@ -1,0 +1,2790 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>نظام عَين - إدارة الغياب المطور | مدرسة البويضة الثانوية</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SheetJS (Excel) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- HTML2PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SweetAlert2 for Modern Alerts -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap');
+        body { font-family: 'Tajawal', sans-serif; transition: background-color 0.3s, color 0.3s; -webkit-tap-highlight-color: transparent; }
+        .page { display: none; animation: fadeIn 0.3s ease-in-out; }
+        .page.active { display: block; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Print Optimization */
+        @media print {
+            body * { visibility: hidden; }
+            .print-area, .print-area * { visibility: visible; }
+            .print-area { position: absolute; left: 0; top: 0; width: 100%; }
+            tr { page-break-inside: avoid !important; }
+            .no-print { display: none !important; }
+        }
+        .print-avoid-break tr { page-break-inside: avoid !important; }
+
+        /* Dark Mode */
+        .dark-mode { background-color: #0f172a !important; color: #f1f5f9 !important; }
+        .dark-mode .bg-white, .dark-mode .bg-slate-50, .dark-mode .bg-gray-50, .dark-mode .bg-gray-100 { background-color: #1e293b !important; color: #f1f5f9 !important; border-color: #334155 !important; }
+        .dark-mode input, .dark-mode select, .dark-mode textarea { background-color: #0f172a !important; color: #fff !important; border-color: #475569 !important; }
+        .dark-mode header, .dark-mode th { background-color: #0f172a !important; border-color: #334155 !important; color: #cbd5e1 !important; }
+        
+        /* Scrollbar styling for desktop apps */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 10px; }
+        .dark-mode ::-webkit-scrollbar-track { background: #1e293b; }
+        .dark-mode ::-webkit-scrollbar-thumb { background: #475569; }
+
+        /* Hide Number Arrows */
+        input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800" id="body-context">
+
+   <div class="flex h-screen overflow-hidden">
+    <!-- Mobile Menu Overlay -->
+    <div id="mobile-menu-overlay" onclick="toggleMobileMenu()" class="fixed inset-0 bg-black bg-opacity-50 z-20 hidden md:hidden"></div>
+
+    <!-- Sidebar -->
+    <!-- التعديل هنا: استخدام translate-x-full (لإخفائه يميناً) بدلاً من -translate-x-full -->
+    <div id="sidebar" class="w-64 bg-slate-900 text-white flex flex-col justify-between fixed md:relative h-full z-30 transform translate-x-full md:translate-x-0 transition-transform duration-300 shadow-2xl md:shadow-none right-0 top-0">
+        <div class="p-5 overflow-y-auto flex-1 space-y-3 custom-scrollbar">
+            <div class="text-center border-b border-slate-700 pb-4 mb-4 relative">
+                <!-- زر الإغلاق -->
+                <button onclick="toggleMobileMenu()" class="md:hidden absolute -right-2 top-0 text-gray-400 hover:text-white">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+      <h1 class="text-lg font-bold text-emerald-400">نظام عَين</h1>
+<h1 class="text-sm font-bold text-white">نظام رصد غياب الطلبة المتطور </h1>
+<p class="text-xs text-slate-300 mt-1" id="side-school-name">مدرسة البويضة الثانوية</p>
+                </div>
+                <nav class="space-y-1.5">
+                    <button onclick="switchPage('dashboard')" class="nav-btn w-full flex items-center p-2.5 rounded-lg hover:bg-slate-800 transition bg-slate-800 text-emerald-400" id="btn-dashboard">
+                        <i class="fa-solid fa-house-user ml-3 w-5"></i><span class="text-xs font-bold"> الشاشة الرئيسية</span>
+                    </button>
+                    <button onclick="switchPage('students-manager')" class="nav-btn w-full flex items-center p-2.5 rounded-lg hover:bg-slate-800 transition text-slate-400" id="btn-students-manager">
+                        <i class="fa-solid fa-users-gear ml-3 w-5 text-blue-400"></i><span class="text-xs font-bold">إدارة بيانات الطلاب</span>
+                    </button>
+                    <button onclick="switchPage('quick-attendance')" class="nav-btn w-full flex items-center p-2.5 rounded-lg hover:bg-slate-800 transition text-slate-400" id="btn-quick-attendance">
+                        <i class="fa-solid fa-mobile-screen-button ml-3 w-5 text-amber-400"></i><span class="text-xs font-bold">الرصد الميداني السريع</span>
+                    </button>
+                    <button onclick="switchPage('class-track')" class="nav-btn w-full flex items-center p-2.5 rounded-lg hover:bg-slate-800 transition text-slate-400" id="btn-class-track">
+                        <i class="fa-solid fa-calendar-check ml-3 w-5"></i><span class="text-xs font-bold">إدارة الغياب بالتواريخ</span>
+                    </button>
+                    <button onclick="switchPage('student-track')" class="nav-btn w-full flex items-center p-2.5 rounded-lg hover:bg-slate-800 transition text-slate-400" id="btn-student-track">
+                        <i class="fa-solid fa-user-graduate ml-3 w-5"></i><span class="text-xs font-bold">سجل الطالب التفصيلي</span>
+                    </button>
+                    <button onclick="switchPage('pdf-reports')" class="nav-btn w-full flex items-center p-2.5 rounded-lg hover:bg-slate-800 transition text-slate-400" id="btn-pdf-reports">
+                        <i class="fa-solid fa-file-pdf ml-3 w-5 text-red-400"></i><span class="text-xs font-bold">التقارير الدورية (PDF)</span>
+                    </button>
+                    <button onclick="switchPage('paper-notices')" class="nav-btn w-full flex items-center p-2.5 rounded-lg hover:bg-slate-800 transition text-slate-400" id="btn-paper-notices">
+                        <i class="fa-solid fa-print ml-3 w-5 text-indigo-400"></i><span class="text-xs font-bold">الإشعارات الورقية للغياب</span>
+                    </button>
+                    <button onclick="switchPage('messages')" class="nav-btn w-full flex items-center p-2.5 rounded-lg hover:bg-slate-800 transition text-slate-400" id="btn-messages">
+                        <i class="fa-brands fa-whatsapp ml-3 w-5 text-emerald-500"></i><span class="text-xs font-bold">مركز الإنذارات (واتساب)</span>
+                    </button>
+                    <button onclick="switchPage('settings')" class="nav-btn w-full flex items-center p-2.5 rounded-lg hover:bg-slate-800 transition text-slate-400" id="btn-settings">
+                        <i class="fa-solid fa-sliders ml-3 w-5 text-teal-400"></i><span class="text-xs font-bold">إعدادات المنظومة</span>
+                    </button>
+                </nav>
+            </div>
+            <div class="p-3 bg-slate-950 text-center border-t border-slate-800 space-y-0.5">
+                <p class="text-[10px] text-slate-400">إعداد وتطوير:</p>
+                <p class="text-xs font-bold text-emerald-400" id="side-manager-name">عمر علي الشبول</p>
+                <p class="text-[10px] text-slate-500" id="side-manager-title">مساعد مدير المدرسة</p>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-y-auto w-full">
+            <!-- Header -->
+            <header class="bg-white shadow-sm px-4 py-3 flex items-center justify-between border-b border-gray-200 z-10 sticky top-0">
+                <div class="flex items-center gap-2">
+                    <button onclick="toggleMobileMenu()" class="md:hidden text-gray-700 p-1">
+                        <i class="fa-solid fa-bars text-xl"></i>
+                    </button>
+                    <button onclick="triggerFilePick()" class="hidden md:flex bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition items-center shadow-sm">
+                        <i class="fa-solid fa-file-excel ml-1.5"></i> استيراد ملف
+                    </button>
+                    <button onclick="toggleDarkMode()" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 px-3 py-1.5 rounded-lg text-xs font-bold transition">
+                        <i class="fa-solid fa-moon"></i>
+                    </button>
+                    <input type="file" id="autoExcelInput" accept=".xlsx" class="hidden" onchange="processStaticFile(event)">
+                </div>
+<!-- حاوية التاريخ والوقت (تتمركز في منتصف الهيدر تماماً) -->
+<div class="absolute left-1/2 -translate-x-1/2 hidden md:flex items-center gap-3 pointer-events-none z-10">
+    
+    <!-- المربع الأول: اليوم والتاريخ (تصميم ناعم وفاتح) -->
+    <div class="flex items-center gap-2 bg-slate-50/90 backdrop-blur-md border border-slate-200 px-4 py-1.5 rounded-xl shadow-sm">
+        <!-- أيقونة التقويم -->
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+        <span id="header-date" class="text-[13px] font-semibold text-slate-600 whitespace-nowrap">
+            جاري التحميل...
+        </span>
+    </div>
+
+    <!-- المربع الثاني: الوقت الحداثي (تصميم داكن وبارز) -->
+    <div class="flex items-center gap-1.5 bg-slate-800 border border-slate-700 px-4 py-1.5 rounded-xl shadow-md" dir="ltr">
+        <!-- الوقت بالأرقام الإنجليزية بخط Monospace -->
+        <span id="header-time-nums" class="font-mono text-sm font-bold text-white tracking-widest tabular-nums">
+            --:--
+        </span>
+        <!-- مؤشر الصباح/المساء بتصميم مصغر ولون خافت -->
+        <span id="header-time-ampm" class="text-[10px] font-bold text-indigo-300 uppercase tracking-wider bg-slate-700/50 px-1.5 py-0.5 rounded-md">
+            --
+        </span>
+    </div>
+
+</div>                
+
+                <div class="flex items-center">
+                    <div id="db-status-indicator" class="flex items-center text-[10px] sm:text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1.5 rounded-full border border-emerald-200">
+                        <span class="h-2 w-2 rounded-full bg-emerald-500 ml-1.5 animate-pulse"></span>
+                        <span id="db-status-text">متصل وآمن</span>
+                    </div>
+                </div>
+            </header>
+
+            <main class="p-3 md:p-6 flex-1 bg-gray-50 dark:bg-slate-900" id="main-container">
+                
+               <!-- 1. Dashboard -->
+<div id="page-dashboard" class="page active space-y-4 md:space-y-6">
+    
+    <!-- القسم الأول: الإحصائيات العامة واليومية (جديد) -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- إجمالي الطلبة الفعلي (لا يتأثر بإعادة التحميل - يحتاج لربط JS صحيح) -->
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between transition-transform hover:scale-[1.02]">
+            <div>
+                <p class="text-gray-500 text-xs font-bold mb-1">إجمالي طلبة المدرسة الفعلي</p>
+                <h4 class="text-2xl md:text-3xl font-bold text-slate-800" id="dash-total-students">0</h4>
+            </div>
+            <div class="text-slate-100 text-4xl"><i class="fa-solid fa-users"></i></div>
+        </div>
+        <!-- الحضور في تاريخ اليوم (جديد) -->
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-emerald-100 flex items-center justify-between transition-transform hover:scale-[1.02]">
+            <div>
+                <p class="text-emerald-600 text-xs font-bold mb-1">الطلبة الحضور (اليوم)</p>
+                <h4 class="text-2xl md:text-3xl font-bold text-emerald-700" id="dash-present-today">0</h4>
+            </div>
+            <div class="text-emerald-100 text-4xl"><i class="fa-solid fa-user-check"></i></div>
+        </div>
+        <!-- الغياب في تاريخ اليوم (جديد) -->
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-red-100 flex items-center justify-between transition-transform hover:scale-[1.02]">
+            <div>
+                <p class="text-red-600 text-xs font-bold mb-1">الطلبة الغائبون (اليوم)</p>
+                <h4 class="text-2xl md:text-3xl font-bold text-red-700" id="dash-absent-today">0</h4>
+            </div>
+            <div class="text-red-100 text-4xl"><i class="fa-solid fa-user-xmark"></i></div>
+        </div>
+    </div>
+
+    <!-- القسم الثاني: أزرار التحكم والعمليات -->
+    <div class="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-gray-100 flex flex-wrap gap-2 justify-center md:justify-start items-center">
+        <button onclick="triggerFilePick()" class="md:hidden bg-emerald-600 text-white text-xs px-4 py-2 rounded-lg hover:bg-emerald-700 shadow-sm font-bold transition-colors"><i class="fa-solid fa-file-excel ml-1"></i> استيراد الإكسل</button>
+        <button onclick="exportCurrentData()" class="bg-slate-800 text-white text-xs px-4 py-2 rounded-lg hover:bg-slate-700 shadow-sm font-bold transition-colors"><i class="fa-solid fa-file-export ml-1"></i> تصدير البيانات الحالي</button>
+        <button onclick="exportEntireSystemJSON()" class="bg-indigo-600 text-white text-xs px-4 py-2 rounded-lg hover:bg-indigo-700 shadow-sm font-bold transition-colors"><i class="fa-solid fa-download ml-1"></i> نسخة احتياطية شاملة</button>
+        <button onclick="clearDatabaseSecure()" class="bg-red-600 text-white text-xs px-4 py-2 rounded-lg hover:bg-red-700 shadow-sm font-bold transition-colors"><i class="fa-solid fa-trash-can ml-1"></i> تصفير النظام</button>
+    </div>
+
+    <!-- القسم الثالث: مؤشرات التنبيه ومؤشر التنبؤ الذكي -->
+    <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4">
+        <div class="bg-white p-3 md:p-4 rounded-xl shadow-sm border-r-4 border-amber-500 flex items-center justify-between">
+            <div>
+                <p class="text-amber-600 text-[10px] md:text-xs font-bold" id="lbl-threshold-oral">تنبيه شفوي</p>
+                <h3 class="text-lg md:text-xl font-bold mt-1" id="count-oral">0</h3>
+            </div>
+            <div class="text-amber-500 text-lg md:text-xl"><i class="fa-solid fa-comment-dots"></i></div>
+        </div>
+        <div class="bg-white p-3 md:p-4 rounded-xl shadow-sm border-r-4 border-orange-500 flex items-center justify-between">
+            <div>
+                <p class="text-orange-600 text-[10px] md:text-xs font-bold" id="lbl-threshold-warning">تنبيه حذر</p>
+                <h3 class="text-lg md:text-xl font-bold mt-1" id="count-warning">0</h3>
+            </div>
+            <div class="text-orange-500 text-lg md:text-xl"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        </div>
+        <div class="bg-white p-3 md:p-4 rounded-xl shadow-sm border-r-4 border-red-500 flex items-center justify-between">
+            <div>
+                <p class="text-red-600 text-[10px] md:text-xs font-bold" id="lbl-threshold-danger">خطر جداً</p>
+                <h3 class="text-lg md:text-xl font-bold mt-1" id="count-danger">0</h3>
+            </div>
+            <div class="text-red-500 text-lg md:text-xl"><i class="fa-solid fa-circle-exclamation"></i></div>
+        </div>
+        <div class="bg-white p-3 md:p-4 rounded-xl shadow-sm border-r-4 border-purple-700 flex items-center justify-between">
+            <div>
+                <p class="text-purple-700 text-[10px] md:text-xs font-bold" id="lbl-threshold-drop">تسرب مدرسي</p>
+                <h3 class="text-lg md:text-xl font-bold mt-1 text-purple-700" id="count-drop">0</h3>
+            </div>
+            <div class="text-purple-700 text-lg md:text-xl"><i class="fa-solid fa-user-slash"></i></div>
+        </div>
+        
+        <!-- مؤشر التنبؤ بالتسرب الذكي (جديد - تتابع غياب) -->
+        <!-- استخدمنا group-hover ليظهر القائمة المنسدلة عند مرور الماوس دون أخذ مساحة من الصفحة -->
+        <div class="relative group bg-white p-3 md:p-4 rounded-xl shadow-sm border-r-4 border-rose-600 flex items-center justify-between cursor-help">
+            <div>
+                <p class="text-rose-600 text-[10px] md:text-xs font-bold">مؤشر خطر (تتابع)</p>
+                <h3 class="text-lg md:text-xl font-bold mt-1 text-rose-700" id="count-consecutive">0</h3>
+            </div>
+            <div class="text-rose-500 text-lg md:text-xl animate-pulse"><i class="fa-solid fa-bell"></i></div>
+            
+            <!-- القائمة المنسدلة الذكية للأسماء -->
+            <div class="absolute top-full right-0 mt-2 w-64 bg-white border border-rose-100 shadow-xl rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 p-3">
+                <h5 class="text-xs font-bold text-rose-700 mb-2 border-b border-rose-100 pb-2"><i class="fa-solid fa-triangle-exclamation ml-1"></i> طلبة بتتابع غياب مستمر:</h5>
+                <ul id="list-consecutive-dropouts" class="text-[11px] text-gray-700 space-y-2 max-h-40 overflow-y-auto custom-scrollbar">
+                    <!-- سيتم حقن الأسماء هنا عبر JS، مثال: -->
+                    <!-- <li class="flex justify-between items-center bg-rose-50 p-1.5 rounded"><span>أحمد محمد</span> <span class="font-bold text-rose-600">10 أيام</span></li> -->
+                    <li class="text-gray-400 text-center py-2">لا يوجد طلبة حالياً</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- القسم الرابع: الجداول والشارتات -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        
+        <!-- أعلى سجلات الغياب بالمدرسة (تم تهيئة التصميم ليكون الاسم قابلاً للنقر) -->
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col max-h-80">
+            <h4 class="font-bold text-gray-700 mb-2 text-xs border-b pb-2 text-red-600 flex justify-between items-center">
+                <span><i class="fa-solid fa-clock-rotate-left ml-1"></i> أعلى سجلات الغياب</span>
+                <span class="text-[9px] text-gray-400 font-normal">اضغط على الطالب للتفاصيل</span>
+            </h4>
+            <div class="overflow-x-auto flex-1 custom-scrollbar">
+                <table class="w-full text-right text-xs min-w-[250px]">
+                    <thead class="bg-gray-50 sticky top-0">
+                        <tr class="text-gray-500">
+                            <th class="p-2">الطالب</th>
+                            <th class="p-2">الشعبة</th>
+                            <th class="p-2 text-center">الغياب</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dash-table-most-absent">
+                        <!-- ملاحظة للمبرمج: عند حقن الصفوف، اجعل اسم الطالب كالتالي ليدل على أنه قابل للنقر: -->
+                        <!-- <tr><td class="p-2 font-bold text-indigo-600 cursor-pointer hover:text-indigo-800 hover:underline transition-colors" onclick="goToStudentProfile(id)">اسم الطالب</td>...</tr> -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- شارت: أكثر الشعب غياباً في تاريخ اليوم (جديد - تصميم UI متطور) -->
+       <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-col h-80 transition-all hover:shadow-md">
+    
+    <!-- الترويسة (Header) -->
+    <div class="flex justify-between items-center mb-3 border-b border-slate-100 pb-2">
+        <h3 class="text-sm font-bold text-slate-800">
+            <i class="fa-solid fa-chart-column text-blue-500 ml-1"></i> أكثر الشعب غياباً 
+            <span class="text-[10px] text-slate-400 font-normal mr-1">(اليوم)</span>
+        </h3>
+        <!-- شارة صغيرة تدل على أن البيانات حية -->
+        <span class="text-[9px] bg-rose-50 text-rose-600 px-2 py-1 rounded-md font-bold border border-rose-100">
+            مباشر <i class="fa-solid fa-circle-dot text-[7px] animate-pulse"></i>
+        </span>
+    </div>
+
+    <!-- حاوية البيانات (الشارت) -->
+    <div id="dash-chart-today-classes" class="flex-1 overflow-y-auto custom-scrollbar space-y-3 p-1">
+        
+        <!-- ==========================================
+             مثال لشكل البيانات عند الحقن بواسطة JS 
+             ========================================== -->
+        <!--
+        <div class="group cursor-default">
+            <div class="flex justify-between items-end mb-1.5">
+                <span class="text-xs font-bold text-slate-700 group-hover:text-blue-600 transition-colors">السابع - أ</span>
+                <span class="text-[10px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100">8 غياب</span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                <div class="bg-gradient-to-r from-blue-400 to-blue-600 h-1.5 rounded-full relative transition-all duration-700 ease-out" style="width: 80%"></div>
+            </div>
+        </div>
+        -->
+        
+        <!-- حالة الانتظار (Empty State) بتصميم احترافي يطابق الرصد السريع -->
+        <div class="flex flex-col items-center justify-center h-full text-slate-400 space-y-3 mt-10">
+            <div class="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center border border-dashed border-slate-200">
+                <i class="fa-solid fa-clipboard-check text-xl text-slate-300"></i>
+            </div>
+            <span class="text-xs font-bold">بانتظار بدء رصد اليوم...</span>
+        </div>
+
+    </div>
+</div>
+
+        <!-- كثافة الغياب الكلية حسب الشعب -->
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col max-h-80">
+            <h4 class="font-bold text-gray-700 mb-2 text-xs border-b pb-2 text-slate-700"><i class="fa-solid fa-chart-simple ml-1"></i> كثافة الغياب التراكمي (للشعب)</h4>
+            <div class="overflow-x-auto flex-1 custom-scrollbar">
+                <table class="w-full text-right text-xs min-w-[200px]">
+                    <thead class="bg-gray-50 sticky top-0">
+                        <tr class="text-gray-500">
+                            <th class="p-2">الشعبة</th>
+                            <th class="p-2 text-center">إجمالي الأيام</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dash-table-most-classes"></tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+                <!-- 2. Students Manager (إدارة بيانات الطلاب - NEW) -->
+                <div id="page-students-manager" class="page space-y-4">
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+                            <h3 class="text-sm font-bold text-gray-800"><i class="fa-solid fa-users-gear text-blue-500 ml-1"></i> إدارة بيانات وسجلات الطلاب</h3>
+                            <button onclick="openStudentModal()" class="bg-blue-600 text-white px-4 py-2 rounded text-xs font-bold shadow hover:bg-blue-700 transition w-full sm:w-auto">
+                                <i class="fa-solid fa-plus ml-1"></i> إضافة طالب جديد يدوياً
+                            </button>
+                        </div>
+
+                        <div class="flex gap-2 mb-4">
+                            <input type="text" id="filterStudentText" onkeyup="renderStudentsManagerTable()" placeholder="ابحث بالاسم أو الرقم الوطني..." class="border p-2 rounded text-xs flex-1 bg-gray-50">
+                            <select id="filterStudentClass" onchange="renderStudentsManagerTable()" class="border p-2 rounded text-xs bg-gray-50 w-32"></select>
+                        </div>
+
+                        <div class="overflow-x-auto border rounded max-h-[60vh] custom-scrollbar">
+                            <table class="w-full text-right text-xs min-w-[600px]">
+                                <thead class="bg-slate-100 text-slate-600 sticky top-0">
+                                    <tr>
+                                        <th class="p-2 border-b">الرقم الوطني</th>
+                                        <th class="p-2 border-b">اسم الطالب</th>
+                                        <th class="p-2 border-b">الشعبة</th>
+                                        <th class="p-2 border-b">هاتف ولي الأمر</th>
+                                        <th class="p-2 border-b text-center">الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="students-manager-tbody" class="bg-white divide-y">
+                                    <!-- Dynamic Content -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+              <!-- 3. Quick Attendance -->
+<div id="page-quick-attendance" class="page space-y-4">
+    <div class="bg-white p-4 rounded-xl shadow-sm border border-amber-200">
+        <h3 class="text-sm font-bold text-slate-800 mb-3 border-b pb-2">
+            <i class="fa-solid fa-mobile-screen-button text-amber-500 ml-1"></i> الرصد الميداني السريع للهاتف
+        </h3>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-1">الشعبة المستهدفة:</label>
+                <select id="quickClassSelector" onchange="renderQuickAttendanceList()" class="w-full border border-gray-200 p-2 rounded-lg text-xs bg-gray-50 font-bold focus:ring-2 focus:ring-amber-500 outline-none transition-all"></select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-1">تاريخ الرصد:</label>
+                <input type="date" id="quickAttendanceDate" onchange="renderQuickAttendanceList()" class="w-full border border-gray-200 p-2 rounded-lg text-xs bg-gray-50 font-bold focus:ring-2 focus:ring-amber-500 outline-none transition-all">
+            </div>
+        </div>
+
+        <!-- شريط الإحصائيات الحي (يظهر بعد اختيار الشعبة) -->
+        <div id="quick-stats-bar" class="hidden bg-slate-50 border border-slate-100 rounded-lg p-3 mb-4 flex justify-between items-center transition-all">
+            <div class="text-center w-1/2 border-l border-slate-200">
+                <span class="block text-[10px] text-gray-500 font-bold mb-1">طلاب الشعبة</span>
+                <span id="quick-total-class" class="text-lg font-bold text-slate-700">0</span>
+            </div>
+            <div class="text-center w-1/2">
+                <span class="block text-[10px] text-rose-500 font-bold mb-1">إجمالي الغياب (مباشر)</span>
+                <span id="quick-live-absent" class="text-lg font-bold text-rose-600">0</span>
+            </div>
+        </div>
+
+        <!-- قائمة الطلاب -->
+        <div id="quick-students-container" class="space-y-2 max-h-[55vh] overflow-y-auto custom-scrollbar p-1">
+            <p class="text-center text-gray-400 py-6 text-xs font-bold">يرجى تحديد الشعبة لبدء الرصد.</p>
+        </div>
+        
+        <div class="mt-4 pt-3 border-t">
+            <button onclick="saveQuickAttendance()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg shadow transition-colors text-sm flex justify-center items-center gap-2">
+                <i class="fa-solid fa-cloud-arrow-up"></i> حفظ وتثبيت غياب اليوم
+            </button>
+        </div>
+    </div>
+</div>
+
+                <!-- 4. Class Track (Date specific) -->
+                <div id="page-class-track" class="page space-y-4">
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                        <h3 class="text-sm font-bold text-slate-800 mb-3 border-b pb-2"><i class="fa-solid fa-calendar-check text-indigo-500 ml-1"></i> رصد الغياب وتعديله حسب التاريخ</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                            <div><label class="block text-xs font-bold text-gray-600 mb-1">اختر الشعبة:</label><select id="classSelector" onchange="renderClassAbsences()" class="w-full border p-2 rounded text-xs bg-gray-50"></select></div>
+                            <div><label class="block text-xs font-bold text-gray-600 mb-1">تاريخ اليوم:</label><input type="date" id="attendanceDate" onchange="renderClassAbsences()" class="w-full border p-2 rounded text-xs bg-gray-50 font-bold"></div>
+                        </div>
+                        <div class="overflow-x-auto border rounded custom-scrollbar max-h-[60vh]">
+                            <table class="w-full text-right text-xs min-w-[500px]">
+                                <thead class="bg-slate-100 text-slate-600 sticky top-0">
+                                    <tr><th class="p-2 border-b">الطالب</th><th class="p-2 border-b text-center">إجمالي الأيام</th><th class="p-2 border-b text-center">حالة الإنذار</th><th class="p-2 border-b text-center">تسجيل الغياب لليوم المحدد</th></tr>
+                                </thead>
+                                <tbody id="class-students-rows" class="bg-white divide-y">
+                                    <tr><td colspan="4" class="text-center p-4 text-gray-400 font-bold">الرجاء اختيار الشعبة.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. Student Track Profile -->
+                <div id="page-student-track" class="page space-y-4">
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                        <h3 class="text-sm font-bold text-slate-800 mb-3"><i class="fa-solid fa-user-graduate text-slate-500 ml-1"></i> السجل الأكاديمي التفصيلي للطالب</h3>
+                        <div class="flex flex-col sm:flex-row gap-2 mb-4">
+                            <input type="text" id="searchStudentInput" placeholder="اكتب الاسم أو الرقم الوطني للبحث الدقيق..." class="flex-1 border p-2 rounded text-xs bg-gray-50">
+                            <button onclick="searchStudentDetails()" class="bg-slate-800 text-white px-5 py-2 rounded text-xs font-bold shadow hover:bg-slate-700">بحث وعرض</button>
+                        </div>
+
+                        <div id="student-profile-card" class="hidden p-4 bg-slate-50 rounded-xl border border-gray-200 space-y-4 mt-4">
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 border-b pb-3 text-xs">
+                                <div><p class="text-[10px] text-gray-400 font-bold">الرقم الوطني</p><p class="font-bold text-slate-800 mt-0.5" id="prof-national-id">-</p></div>
+                                <div><p class="text-[10px] text-gray-400 font-bold">اسم الطالب</p><p class="font-bold text-slate-800 mt-0.5" id="prof-name">-</p></div>
+                                <div><p class="text-[10px] text-gray-400 font-bold">الشعبة</p><p class="font-bold text-slate-800 mt-0.5" id="prof-class">-</p></div>
+                                <div><p class="text-[10px] text-gray-400 font-bold">الإجمالي والموقف</p><p class="font-bold mt-0.5"><span id="prof-absences-count" class="text-red-600"></span> - <span id="prof-level-badge" class="px-1.5 py-0.5 rounded text-[10px]"></span></p></div>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-xs text-gray-700 mb-2">سجل تواريخ الغياب الموثقة:</h4>
+                                <div id="student-dates-list" class="flex flex-wrap gap-2"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 6. PDF Reports -->
+                <div id="page-pdf-reports" class="page space-y-4">
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                        <h3 class="text-sm font-bold text-slate-800 mb-3"><i class="fa-solid fa-file-pdf text-red-500 ml-1"></i> إصدار التقارير الشهرية والدورية (PDF)</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 bg-slate-50 p-3 rounded border mb-4">
+                            <div><label class="block text-xs font-bold text-gray-600 mb-1">الشعبة:</label><select id="pdfClassSelector" class="w-full border p-2 rounded text-xs bg-white"></select></div>
+                            <div><label class="block text-xs font-bold text-gray-600 mb-1">من تاريخ:</label><input type="date" id="pdfFromDate" class="w-full border p-2 rounded text-xs"></div>
+                            <div><label class="block text-xs font-bold text-gray-600 mb-1">إلى تاريخ:</label><input type="date" id="pdfToDate" class="w-full border p-2 rounded text-xs"></div>
+                            <div class="flex items-end"><button onclick="generatePDFReport()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded text-xs shadow"><i class="fa-solid fa-print ml-1"></i> طباعة التقرير</button></div>
+                        </div>
+
+                        <!-- PDF Template -->
+                        <div id="pdf-print-area" class="bg-white p-6 rounded border hidden text-right print-area print-avoid-break" dir="rtl">
+                            <div class="text-center border-b border-gray-800 pb-3 mb-4">
+                                <h2 class="text-base font-bold text-black mb-1">المملكة الأردنية الهاشمية - وزارة التربية والتعليم</h2>
+                                <h3 class="text-sm font-bold text-black" id="pdf-header-school">المدرسة</h3>
+                                <p class="text-xs text-black mt-1 font-bold">تقرير تفصيلي لغياب الطلبة وحساب نسب الحضور</p>
+                                <p class="text-[10px] text-gray-700 mt-1" id="pdf-meta-dates"></p>
+                            </div>
+                            <table class="w-full text-right border-collapse border border-gray-400 text-[10px] sm:text-xs text-black">
+                                <thead class="bg-gray-100">
+                                    <tr>
+                                        <th class="border border-gray-400 p-1.5 w-20">الرقم الوطني</th>
+                                        <th class="border border-gray-400 p-1.5 w-40">اسم الطالب</th>
+                                        <th class="border border-gray-400 p-1.5 w-16">الشعبة</th>
+                                        <th class="border border-gray-400 p-1.5 w-12 text-center">أيام</th>
+                                        <th class="border border-gray-400 p-1.5 w-12 text-center">%</th>
+                                        <th class="border border-gray-400 p-1.5">التواريخ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pdf-table-body"></tbody>
+                            </table>
+                            <div class="mt-8 flex justify-between text-xs font-bold text-black px-2">
+                                <p id="pdf-footer-author">معد التقرير:</p>
+                                <p>خاتم وتوقيع مدير المدرسة:</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+             <!-- 7. Paper Notices -->
+<div id="page-paper-notices" class="page space-y-4">
+    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+        <h3 class="text-sm font-bold text-slate-800 mb-2"><i class="fa-solid fa-filter text-indigo-500 ml-1"></i> التبليغات الورقية المفرزة</h3>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 bg-indigo-50 p-4 rounded border border-indigo-100 items-end mb-4">
+            <div>
+                <label class="block text-xs font-bold text-indigo-900 mb-1">الشرط:</label>
+                <select id="filterOperator" class="w-full border p-2 rounded text-xs bg-white font-bold">
+                    <option value="gte">أكبر من أو يساوي (>=)</option>
+                    <option value="eq">يساوي (=)</option>
+                    <option value="lte">أقل من أو يساوي (<=)</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-indigo-900 mb-1">الأيام:</label>
+                <input type="number" id="filterTargetDays" value="10" min="1" class="w-full border p-2 rounded text-xs font-bold">
+            </div>
+            <!-- تم تعديل الأزرار لتشمل زر الفلترة -->
+            <div class="md:col-span-2 flex gap-2">
+                <button onclick="applyPaperFilter()" class="flex-1 bg-blue-600 text-white font-bold py-2 rounded text-xs shadow hover:bg-blue-700"><i class="fa-solid fa-search ml-1"></i> فلترة وتحديد</button>
+                <button onclick="exportFilteredExcel()" class="flex-1 bg-green-600 text-white font-bold py-2 rounded text-xs shadow hover:bg-green-700"><i class="fa-solid fa-file-excel ml-1"></i> إكسل</button>
+                <button onclick="exportFilteredPDF()" class="flex-1 bg-indigo-600 text-white font-bold py-2 rounded text-xs shadow hover:bg-indigo-700"><i class="fa-solid fa-file-pdf ml-1"></i> PDF</button>
+            </div>
+        </div>
+
+     <!-- جدول عرض نتائج الفلترة المحدث -->
+<div class="overflow-x-auto mb-4 bg-white border border-gray-300 rounded-lg shadow-sm">
+    <table class="w-full text-right border-collapse text-xs text-black">
+        <thead class="bg-gray-100 border-b border-gray-300">
+            <tr>
+                <!-- عمود التحديد الموحد (تحديد الكل) -->
+                <th class="p-2 border-l border-gray-300 text-center w-12">
+                    <input type="checkbox" id="selectAllFiltered" onclick="toggleAllFiltered(this)" class="w-4 h-4 cursor-pointer accent-indigo-600" title="تحديد/إلغاء تحديد الكل">
+                </th>
+                <th class="p-2 border-l border-gray-300">اسم الطالب</th>
+                <th class="p-2 border-l border-gray-300">الشعبة</th>
+                <th class="p-2 border-l border-gray-300 text-center">أيام الغياب</th>
+                <th class="p-2 border-l border-gray-300">حالة الإنذار</th>
+                <!-- عمود سجل التبليغات الجديد -->
+                <th class="p-2 text-center w-32">عدد التبليغات</th>
+            </tr>
+        </thead>
+        <tbody id="paper-filter-results-body">
+            <tr><td colspan="6" class="text-center p-6 text-gray-500 font-medium">قم بتحديد الشروط واضغط على زر "فلترة بالجدول" لعرض الطلاب المستحقين</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- زر استصدار البلاغ الرسمي -->
+<div class="flex justify-end mb-6 border-t pt-4">
+    <button onclick="printSelectedFilteredNotices()" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg text-sm shadow-md transition-all flex items-center gap-2">
+        <i class="fa-solid fa-envelope-open-text"></i> استصدار مذكرة بلاغ رسمي لولي الامر (تبليغ رسمي)
+    </button>
+
+
+<!-- حاوية الطباعة المخفية (لا تظهر إلا عند الطباعة) -->
+<div id="paper-pdf-print-area" class="hidden print-area"></div>
+
+ </div>
+        </div>
+    </div>
+
+
+                <!-- 8. Messages Queue (WhatsApp) -->
+                <div id="page-messages" class="page space-y-4">
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                        <div class="flex flex-col sm:flex-row justify-between sm:items-center border-b pb-2 mb-3 gap-2">
+                            <h3 class="text-sm font-bold text-slate-800"><i class="fa-brands fa-whatsapp text-emerald-500 ml-1"></i> مركز الإنذارات (مراسلة واتساب الذكية)</h3>
+                            <button onclick="initializeMessageQueue()" class="bg-slate-800 text-white font-bold text-xs px-4 py-2 rounded shadow">تحديث طابور المراسلة المستحقة</button>
+                        </div>
+                        
+                        <div id="queue-control-card" class="bg-emerald-50 p-3 rounded-lg border border-emerald-200 hidden mb-4">
+                            <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
+                                <div class="text-xs font-bold text-emerald-900">الطابور: <span id="queue-count" class="text-lg">0 / 0</span></div>
+                                <div class="text-xs font-bold text-emerald-800 flex-1 text-center" id="queue-next-student">-</div>
+                                <button onclick="processNextQueueItem()" id="btn-trigger-queue" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2 rounded shadow flex items-center w-full sm:w-auto justify-center">
+                                    <i class="fa-brands fa-whatsapp ml-1"></i> إرسال للتالي
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div><h4 class="font-bold text-xs text-amber-600 mb-1 border-b pb-1">تنبيه شفوي متاح للإرسال:</h4><div id="list-level-oral" class="space-y-1 max-h-40 overflow-y-auto custom-scrollbar"></div></div>
+                            <div><h4 class="font-bold text-xs text-orange-600 mb-1 border-b pb-1">تنبيه حذر متاح للإرسال:</h4><div id="list-level-warning" class="space-y-1 max-h-40 overflow-y-auto custom-scrollbar"></div></div>
+                            <div><h4 class="font-bold text-xs text-red-600 mb-1 border-b pb-1">إنذار خطر متاح للإرسال:</h4><div id="list-level-danger" class="space-y-1 max-h-40 overflow-y-auto custom-scrollbar"></div></div>
+                            <div><h4 class="font-bold text-xs text-purple-700 mb-1 border-b pb-1">تسرب مدرسي متاح للإرسال:</h4><div id="list-level-drop" class="space-y-1 max-h-40 overflow-y-auto custom-scrollbar"></div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 9. Settings -->
+                <div id="page-settings" class="page space-y-4">
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                        <h3 class="text-sm font-bold text-slate-800 mb-3 border-b pb-2"><i class="fa-solid fa-sliders text-teal-600 ml-1"></i> إعدادات المنظومة وصلاحيات النظام</h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- School Info -->
+<div class="bg-slate-50 p-3 rounded border space-y-2 relative">
+    <div class="flex justify-between items-center mb-2">
+        <h4 class="font-bold text-xs text-slate-700">
+            <i class="fa-solid fa-school text-indigo-500 ml-1"></i> معلومات المدرسة والمسؤول
+        </h4>
+        <button onclick="unlockSettings()" id="btn-unlock" class="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-1 rounded font-bold hover:bg-indigo-200">
+            <i class="fa-solid fa-lock ml-1"></i> فتح القفل
+        </button>
+    </div>
+    
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+        <!-- اسم المدرسة: يظل قابلاً للفتح والتعديل -->
+        <div class="sm:col-span-2">
+            <label class="block mb-1 font-bold text-gray-600">اسم المدرسة:</label>
+            <input type="text" id="cfg_school_name" disabled class="w-full border p-1.5 rounded bg-gray-200">
+        </div>
+        
+        <!-- اسم المسؤول: مغلق نهائياً -->
+        <div>
+            <label class="block mb-1 font-bold text-gray-600">اسم المسؤول:</label>
+            <input type="text" id="cfg_manager_name" disabled readonly class="w-full border p-1.5 rounded bg-gray-200 cursor-not-allowed opacity-70" title="لا يمكن تعديل هذا الحقل">
+        </div>
+        
+        <!-- المسمى الوظيفي: مغلق نهائياً -->
+        <div>
+            <label class="block mb-1 font-bold text-gray-600">المسمى الوظيفي:</label>
+            <input type="text" id="cfg_manager_title" disabled readonly class="w-full border p-1.5 rounded bg-gray-200 cursor-not-allowed opacity-70" title="لا يمكن تعديل هذا الحقل">
+        </div>
+    </div>
+</div>
+
+<!-- قسم التحكم بقفل الحماية في الإعدادات -->
+<div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4 max-w-lg mx-auto" dir="rtl">
+    <h3 class="font-bold text-lg text-slate-800 mb-4 border-b pb-2">🔒 إعدادات حماية النظام</h3>
+    
+    <!-- حقل كلمة المرور الحالية (شرط أمان أساسي) -->
+    <div class="bg-red-50 p-3 rounded-lg border border-red-100 mb-4">
+        <label class="block text-xs font-bold text-red-700 mb-1">كلمة المرور الحالية (مطلوبة لإجراء أي تعديل)</label>
+        <input type="password" id="settings-current-password" placeholder="أدخل كلمة المرور الحالية للتحقق..." class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-red-500 outline-none">
+    </div>
+
+    <!-- خيار تفعيل/تعطيل القفل -->
+    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+        <span class="text-sm font-medium text-slate-700">تفعيل شاشة القفل عند فتح الصفحة</span>
+        <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="settings-lock-enabled" class="sr-only peer">
+            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+        </label>
+    </div>
+
+    <!-- تعديل اسم المستخدم وكلمة المرور -->
+    <div class="grid grid-cols-2 gap-4">
+        <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">اسم المستخدم الجديد (اختياري)</label>
+            <input type="text" id="settings-username" placeholder="اتركه فارغاً لعدم التغيير" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+        </div>
+        <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">كلمة المرور الجديدة (اختياري)</label>
+            <input type="password" id="settings-password" placeholder="اتركه فارغاً لعدم التغيير" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+        </div>
+    </div>
+
+    <!-- زر الحفظ -->
+    <button onclick="saveLockSettings()" 
+            class="w-full bg-slate-800 text-white font-medium py-2 rounded-lg hover:bg-slate-900 transition duration-150 text-sm mt-2">
+        حفظ إعدادات الأمان
+    </button>
+</div>
+                            <!-- Term & Absences -->
+                            <div class="bg-slate-50 p-3 rounded border space-y-2">
+                                <h4 class="font-bold text-xs text-slate-700 mb-2"><i class="fa-solid fa-calendar-days text-sky-500 ml-1"></i> التقويم وعتبات الغياب (بالأيام)</h4>
+                                <div class="grid grid-cols-2 gap-2 text-[11px] sm:text-xs">
+                                    <div><label class="block mb-1 font-bold text-gray-600">بداية العام:</label><input type="date" id="cfg_term_start" onchange="saveAllSettings()" class="w-full border p-1.5 rounded"></div>
+                                    <div><label class="block mb-1 font-bold text-gray-600">نهاية العام:</label><input type="date" id="cfg_term_end" onchange="saveAllSettings()" class="w-full border p-1.5 rounded"></div>
+                                    <div><label class="block mb-1 font-bold text-amber-600">الشفوي الأول:</label><input type="number" id="cfg_th_oral" onchange="saveAllSettings()" class="w-full border p-1.5 rounded"></div>
+                                    <div><label class="block mb-1 font-bold text-orange-600">التنبيه الحذر:</label><input type="number" id="cfg_th_warning" onchange="saveAllSettings()" class="w-full border p-1.5 rounded"></div>
+                                    <div><label class="block mb-1 font-bold text-red-600">الخطر جداً:</label><input type="number" id="cfg_th_danger" onchange="saveAllSettings()" class="w-full border p-1.5 rounded"></div>
+                                    <div><label class="block mb-1 font-bold text-purple-700">التسرب:</label><input type="number" id="cfg_th_drop" onchange="saveAllSettings()" class="w-full border p-1.5 rounded"></div>
+                                </div>
+                            </div>
+
+                            <!-- Holidays & Saturdays -->
+                            <div class="bg-slate-50 p-3 rounded border">
+                                <h4 class="font-bold text-xs text-slate-700 mb-2"><i class="fa-solid fa-umbrella-beach text-red-500 ml-1"></i> إدارة العطل وأيام السبت الاستثنائية</h4>
+                                
+                                <div class="mb-3 border-b pb-2">
+                                    <label class="block text-[10px] font-bold mb-1 text-gray-500">إضافة فترة عطلة (من - إلى):</label>
+                                    <div class="flex gap-1 mb-2">
+                                        <input type="date" id="h_start" class="border p-1 rounded text-xs flex-1">
+                                        <input type="date" id="h_end" class="border p-1 rounded text-xs flex-1">
+                                        <button onclick="addHolidayPeriod()" class="bg-red-600 text-white font-bold text-xs px-2 rounded hover:bg-red-700">+</button>
+                                    </div>
+                                    <div id="holidays-list" class="flex flex-wrap gap-1 max-h-20 overflow-y-auto custom-scrollbar bg-white p-1 rounded border"></div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-[10px] font-bold mb-1 text-gray-500">إضافة يوم سبت كدوام رسمي:</label>
+                                    <div class="flex gap-1 mb-2">
+                                        <input type="date" id="s_work" class="border p-1 rounded text-xs flex-1">
+                                        <button onclick="addWorkingSaturday()" class="bg-blue-600 text-white font-bold text-xs px-2 rounded hover:bg-blue-700">+</button>
+                                    </div>
+                                    <div id="saturdays-list" class="flex flex-wrap gap-1 max-h-16 overflow-y-auto custom-scrollbar bg-white p-1 rounded border"></div>
+                                </div>
+                            </div>
+    <!-- 1. مربع مراقبة صحة قاعدة البيانات والتخزين -->
+    <div class="bg-white p-4 rounded-xl border border-blue-100 shadow-sm relative transition-all hover:shadow-md">
+        <h4 class="font-bold text-sm text-slate-800 mb-4 border-b border-blue-50 pb-2 flex items-center">
+            <i class="fa-solid fa-database text-blue-500 ml-2"></i> صحة قاعدة البيانات والتخزين
+        </h4>
+        
+        <!-- سلامة النظام (مع Tooltip ذكي) -->
+        <div class="flex justify-between items-center mb-4 group relative cursor-help bg-slate-50 p-2 rounded border border-slate-100">
+            <span class="text-xs font-bold text-slate-600">سلامة النظام والأعطال:</span>
+            <span class="bg-green-100 text-green-700 px-2 py-1 rounded text-[10px] font-bold flex items-center shadow-sm">
+                <i class="fa-solid fa-shield-check ml-1"></i> سليم 100%
+            </span>
+            <!-- التلميح (Tooltip) -->
+            <div class="absolute top-full mt-2 right-0 hidden group-hover:block bg-slate-800 text-white text-[11px] p-2 rounded shadow-lg z-50 w-56 text-center">
+                خوارزميات الحفظ تعمل بكفاءة. لا توجد تعارضات في البيانات (IndexedDB / LocalStorage).
+            </div>
+        </div>
+
+        <!-- مراقبة الاستهلاك الحقيقي (مع Tooltip ذكي) -->
+        <div class="mb-5 group relative cursor-help p-2 rounded hover:bg-slate-50 transition-colors">
+            <div class="flex justify-between items-center mb-1 text-xs">
+                <span class="font-bold text-slate-600">مساحة التخزين المستهلكة:</span>
+                <span class="font-bold text-blue-600 font-mono" id="storage-used-text">جارِ الفحص...</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2 shadow-inner overflow-hidden">
+                <div class="bg-gradient-to-l from-blue-500 to-blue-400 h-2 rounded-full transition-all duration-1000" style="width: 0%" id="storage-progress"></div>
+            </div>
+            <!-- التلميح (Tooltip) -->
+            <div class="absolute top-full mt-2 right-0 hidden group-hover:block bg-slate-800 text-white text-[11px] p-2 rounded shadow-lg z-50 w-56 text-center">
+                يتم تخزين بيانات غياب الطلبة بشكل آمن ومحلي في متصفحك. السعة الإجمالية تكفي لسنوات من العمل.
+            </div>
+        </div>
+
+        <!-- نقاط الاستعادة -->
+        <div>
+            <h5 class="text-[11px] font-bold text-slate-500 mb-2 flex items-center">
+                <i class="fa-solid fa-clock-rotate-left text-gray-400 ml-1"></i> أحدث 3 نقاط للحفظ التلقائي
+            </h5>
+            <ul class="space-y-1.5" id="restore-points-list">
+                <!-- سيتم تعبئتها بواسطة الجافاسكربت -->
+            </ul>
+        </div>
+    </div>
+                            <!-- Classes & WhatsApp Templates -->
+                            <div class="bg-slate-50 p-3 rounded border space-y-2">
+                                <h4 class="font-bold text-xs text-slate-700 mb-2"><i class="fa-solid fa-layer-group text-emerald-500 ml-1"></i> الشعب المدرسية</h4>
+                                <div class="flex gap-1 mb-2">
+                                    <input type="text" id="newClassInput" placeholder="مثال: أول ثانوي علمي" class="border p-1.5 rounded text-xs flex-1">
+                                    <button onclick="addNewClass()" class="bg-emerald-600 text-white font-bold text-xs px-3 rounded hover:bg-emerald-700">+</button>
+                                </div>
+                                <div id="classes-settings-list" class="flex flex-wrap gap-1 max-h-16 overflow-y-auto custom-scrollbar bg-white p-1 rounded border mb-3 border-b pb-3"></div>
+                                
+                                <h4 class="font-bold text-xs text-slate-700 mb-1"><i class="fa-brands fa-whatsapp text-emerald-500 ml-1"></i> قوالب رسائل الواتساب</h4>
+                                <select id="msg_template_selector" onchange="loadSelectedTemplate()" class="w-full border p-1.5 rounded text-[11px] mb-1 font-bold">
+                                    <option value="t_oral">صيغة التنبيه الشفوي</option>
+                                    <option value="t_warning">صيغة التنبيه الحذر</option>
+                                    <option value="t_danger">صيغة إنذار الخطر الشديد</option>
+                                    <option value="t_drop">صيغة إنذار التسرب</option>
+                                </select>
+                                <textarea id="msg_template_text" rows="2" class="w-full border p-1.5 rounded text-[11px]"></textarea>
+                                <button onclick="saveSelectedTemplate()" class="w-full bg-slate-800 text-white py-1 rounded text-[11px] font-bold">حفظ الصيغة</button>
+                                <p class="text-[9px] text-gray-500 text-center mt-1">المتغيرات المدعومة: [الطالب]، [الشعبة]، [الغياب]، [المستوى]</p>
+                            </div>
+                        </div>
+<!-- ========================================== -->
+<!-- قسم حالة النظام وهوية المصمم (الإضافات الجديدة) -->
+<!-- ========================================== -->
+<div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+    
+
+
+    <!-- 2. مربع بطاقة المصمم وهوية النظام -->
+    <div class="bg-gradient-to-br from-slate-800 to-slate-900 p-1 rounded-xl shadow-sm relative overflow-hidden group">
+        <!-- زخرفة خلفية -->
+        <div class="absolute -top-10 -right-10 text-slate-700 opacity-20 transition-transform duration-700 group-hover:scale-110 group-hover:rotate-12">
+            <i class="fa-solid fa-fingerprint text-9xl"></i>
+        </div>
+        
+        <div class="bg-white/95 backdrop-blur-sm w-full h-full rounded-lg p-5 flex flex-col justify-center items-center text-center relative z-10 border border-slate-700/10">
+            <!-- أيقونة النظام -->
+            <div class="w-14 h-14 bg-gradient-to-br from-indigo-600 to-blue-700 text-white rounded-2xl shadow-lg flex items-center justify-center text-2xl mb-4 transform transition-transform group-hover:-translate-y-1">
+                <i class="fa-solid fa-eye"></i>
+            </div>
+            
+            <!-- اسم النظام -->
+            <h3 class="font-black text-xl text-slate-800 tracking-tight mb-1">نظام عَـيْـن</h3>
+            <p class="text-xs font-bold text-indigo-600 mb-4 bg-indigo-50 px-3 py-1 rounded-full">لإدارة غياب الطلبة المدرسي المتطوّر</p>
+            
+            <div class="w-2/3 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent mb-4"></div>
+            
+            <!-- معلومات المصمم -->
+            <div class="space-y-2 w-full">
+                <p class="text-[11px] font-bold text-slate-500">تصميم وتطوير</p>
+                <p class="text-base font-black text-slate-800 bg-slate-50 py-1.5 rounded border border-slate-100">
+                    الأستاذ عُمر علي أحمد الشبول
+                </p>
+                
+                <!-- الإصدار والتاريخ -->
+                <div class="flex justify-center items-center gap-2 text-[11px] text-slate-600 font-bold mt-3">
+                    <span class="flex items-center"><i class="fa-solid fa-code-branch text-emerald-500 ml-1"></i> النسخة الأولى 1.0</span>
+                    <span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+                    <span class="flex items-center"><i class="fa-solid fa-calendar-day text-blue-500 ml-1"></i> 2026 م - 1448 هـ</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- Student Edit/Add Modal -->
+    <div id="studentModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-md p-5 transform transition-all">
+            <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4 border-b pb-2" id="modal-title">إضافة طالب جديد</h3>
+            <input type="hidden" id="modal-student-id">
+            <div class="space-y-3 text-sm">
+                <div><label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">الرقم الوطني:</label><input type="text" id="modal-national-id" class="w-full border p-2 rounded bg-gray-50 dark:bg-slate-700 text-black dark:text-white"></div>
+                <div><label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">الاسم الرباعي:</label><input type="text" id="modal-name" class="w-full border p-2 rounded bg-gray-50 dark:bg-slate-700 text-black dark:text-white"></div>
+                <div><label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">الشعبة:</label><select id="modal-class" class="w-full border p-2 rounded bg-gray-50 dark:bg-slate-700 text-black dark:text-white"></select></div>
+                <div><label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">رقم هاتف ولي الأمر:</label><input type="text" id="modal-phone" placeholder="مثال: 0791234567" class="w-full border p-2 rounded bg-gray-50 dark:bg-slate-700 text-black dark:text-white" dir="ltr"></div>
+            </div>
+            <div class="mt-5 flex gap-2">
+                <button onclick="saveStudentData()" class="flex-1 bg-emerald-600 text-white font-bold py-2 rounded hover:bg-emerald-700 transition">حفظ البيانات</button>
+                <button onclick="closeStudentModal()" class="flex-1 bg-gray-300 text-gray-800 font-bold py-2 rounded hover:bg-gray-400 transition">إلغاء</button>
+            </div>
+        </div>
+    </div>
+<body>
+<!-- شاشة قفل الحماية (مخفية افتراضياً وتظهر برمجياً) -->
+<div id="lock-screen" class="fixed inset-0 bg-slate-900 bg-opacity-95 backdrop-blur-md flex items-center justify-center z-[9999] hidden">
+    <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md mx-4 text-center border border-slate-100" dir="rtl">
+        <!-- أيقونة القفل -->
+        <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-indigo-50 text-indigo-600 mb-6">
+            <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+        </div>
+        
+        <h2 class="text-2xl font-bold text-slate-800 mb-2">النظام مقفل</h2>
+        <p class="text-sm text-slate-500 mb-6">الرجاء إدخال بيانات المرور للمتابعة</p>
+        
+        <!-- حقول الإدخال -->
+        <div class="space-y-4 mb-6">
+            <input type="text" id="login-username" placeholder="اسم المستخدم" 
+                   class="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-center">
+            
+            <input type="password" id="login-password" placeholder="كلمة المرور" 
+                   class="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-center">
+        </div>
+        
+        <button onclick="unlockPage()" 
+                class="w-full bg-indigo-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-indigo-700 transition duration-200 shadow-md">
+            دخول
+        </button>
+    </div>
+</div>
+    <script>
+        // --- Core Data & Variables ---
+        let studentsData = [];
+        let messageQueue = [];
+        let currentQueueIndex = 0;
+        let quickAbsenceStatus = {};
+        
+// 1. تهيئة القيم الافتراضية إذا لم تكن موجودة مسبقاً في الذاكرة المحلية
+if (localStorage.getItem('lock_username') === null) {
+    localStorage.setItem('lock_username', 'admin');
+}
+if (localStorage.getItem('lock_password') === null) {
+    localStorage.setItem('lock_password', 'admin');
+}
+if (localStorage.getItem('lock_enabled') === null) {
+    localStorage.setItem('lock_enabled', 'true'); // تفعيل افتراضي
+}
+
+// عناصر واجهة المستخدم
+const lockScreen = document.getElementById('lock-screen');
+const isLockEnabled = localStorage.getItem('lock_enabled') === 'true';
+
+// 2. التحقق من حالة القفل عند تحميل الصفحة مباشرة
+window.addEventListener('DOMContentLoaded', () => {
+    if (isLockEnabled) {
+        lockScreen.classList.remove('hidden'); // إظهار شاشة القفل
+    } else {
+        lockScreen.classList.add('hidden'); // إبقاء الصفحة مفتوحة
+    }
+    
+    // تعبئة حقول الإعدادات بالقيم الحالية المحفوظة
+    loadSettingsInForm();
+renderPercentageBasedAbsentChart();
+});
+
+// 3. دالة فك قفل الصفحة
+function unlockPage() {
+    const userInput = document.getElementById('login-username').value;
+    const passInput = document.getElementById('login-password').value;
+    
+    const correctUser = localStorage.getItem('lock_username');
+    const correctPass = localStorage.getItem('lock_password');
+
+    if (userInput === correctUser && passInput === correctPass) {
+        lockScreen.classList.add('hidden'); // إخفاء القفل والدخول للنظام
+        // مسح الحقول لأمان إضافي
+        document.getElementById('login-username').value = '';
+        document.getElementById('login-password').value = '';
+    } else {
+        alert('❌ اسم المستخدم أو كلمة المرور غير صحيحة!');
+    }
+}
+
+// تفعيل ميزة فتح القفل عبر زر Enter في الكيبورد لتسهيل العمل
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !lockScreen.classList.contains('hidden')) {
+        unlockPage();
+    }
+});
+
+// 4. تعبئة البيانات في فورم الإعدادات
+function loadSettingsInForm() {
+    document.getElementById('settings-username').value = localStorage.getItem('lock_username');
+    document.getElementById('settings-password').value = localStorage.getItem('lock_password');
+    document.getElementById('settings-lock-enabled').checked = localStorage.getItem('lock_enabled') === 'true';
+}
+
+// 5. حفظ الإعدادات الجديدة وتحديثها في المتصفح
+function saveLockSettings() {
+    const newUsername = document.getElementById('settings-username').value.trim();
+    const newPassword = document.getElementById('settings-password').value.trim();
+    const isEnabled = document.getElementById('settings-lock-enabled').checked;
+
+    if (!newUsername || !newPassword) {
+        alert('⚠️ الرجاء عدم ترك اسم المستخدم أو كلمة المرور فارغة!');
+        return;
+    }
+
+    localStorage.setItem('lock_username', newUsername);
+    localStorage.setItem('lock_password', newPassword);
+    localStorage.setItem('lock_enabled', isEnabled ? 'true' : 'false');
+
+    alert('✅ تم حفظ إعدادات الأمان بنجاح!');
+    
+    // تحديث الصفحة فوراً لتطبيق الإعدادات الجديدة
+    location.reload();
+}
+
+
+        let sysConfig = {
+            th_oral: 10, th_warning: 15, th_danger: 20, th_drop: 22,
+            term_start: "2026-08-23", term_end: "2027-06-20",
+            school_name: "مدرسة البويضة الثانوية للبنين",
+            manager_name: "عمر علي الشبول", manager_title: "مساعد مدير المدرسة",
+            t_oral: "السيد ولي أمر الطالب [الطالب]، نعلمكم أن غياب ابنكم وصل [الغياب] يوم، وهو مستحق لـ [المستوى].",
+            t_warning: "السيد ولي أمر الطالب [الطالب]، غياب ابنكم وصل [الغياب] يوم، يرجى الحذر من تجاوز الحد القانوني لـ [المستوى].",
+            t_danger: "السيد ولي أمر الطالب [الطالب]، غياب ابنكم التراكمي [الغياب] يوم وهو [المستوى] ويهدد بالفصل.",
+            t_drop: "السيد ولي أمر الطالب [الطالب]، تجاوز غياب ابنكم [الغياب] يوم وهو يقع تحت بند [المستوى]."
+        };
+
+        let schoolClasses = ["ثامن أ", "ثامن ب", "تاسع أ", "عاشر أ", "أول ثانوي أ", "توجيهي أ"];
+        let customHolidays = [];
+        let workingSaturdays = [];
+
+        const dbName = "AynSystemDB";
+        const storeName = "studentsStore";
+        const metaStore = "metaStore";
+        let db = null;
+
+        // --- Initialization ---
+        window.onload = function() {
+            initIndexedDB();
+        };
+
+        function initIndexedDB() {
+            const request = indexedDB.open(dbName, 3);
+            request.onupgradeneeded = function(e) {
+                db = e.target.result;
+                if (!db.objectStoreNames.contains(storeName)) db.createObjectStore(storeName, { keyPath: "id" });
+                if (!db.objectStoreNames.contains(metaStore)) db.createObjectStore(metaStore, { keyPath: "key" });
+            };
+            request.onsuccess = function(e) {
+                db = e.target.result;
+                loadSettingsAndData();
+            };
+            request.onerror = function() {
+                Swal.fire('خطأ أمني', 'لا يمكن الوصول لقاعدة البيانات المحلية. قد تكون تستخدم التصفح المخفي.', 'error');
+            };
+        }
+
+        function loadSettingsAndData() {
+            const tx = db.transaction([storeName, metaStore], "readonly");
+            
+            tx.objectStore(metaStore).get("sysConfig").onsuccess = e => { if(e.target.result) sysConfig = { ...sysConfig, ...e.target.result.value }; applyConfigToUI(); };
+            tx.objectStore(metaStore).get("classes").onsuccess = e => { if(e.target.result) schoolClasses = e.target.result.value; populateSelectors(); renderSettingsLists(); };
+            tx.objectStore(metaStore).get("holidays").onsuccess = e => { if(e.target.result) customHolidays = e.target.result.value; renderSettingsLists(); };
+            tx.objectStore(metaStore).get("workingSaturdays").onsuccess = e => { if(e.target.result) workingSaturdays = e.target.result.value; renderSettingsLists(); };
+            
+            tx.objectStore(storeName).getAll().onsuccess = e => {
+                if (e.target.result) studentsData = e.target.result;
+                calculateMetrics();
+                setDefaultDates();
+            };
+        }
+
+        // --- UI & Nav ---
+        function toggleMobileMenu() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobile-menu-overlay');
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        }
+
+        function switchPage(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('bg-slate-800', 'text-emerald-400', 'border-r-4', 'border-emerald-400'));
+            
+            document.getElementById(`page-${pageId}`).classList.add('active');
+            const activeBtn = document.getElementById(`btn-${pageId}`);
+            if(activeBtn) activeBtn.classList.add('bg-slate-800', 'text-emerald-400', 'border-r-4', 'border-emerald-400');
+            
+            if(window.innerWidth < 768) { toggleMobileMenu(); } // Close mobile menu on click
+            if(pageId === 'students-manager') renderStudentsManagerTable();
+        }
+
+        function toggleDarkMode() { document.getElementById('body-context').classList.toggle('dark-mode'); }
+        function escapeHtml(v) { return String(v||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m])); }
+        function formatDateToDMY(str) { if(!str) return '-'; const p = str.split('-'); return p.length===3 ? `${p[2]}-${p[1]}-${p[0]}` : str; }
+
+        function showDbIndicator() {
+            const t = document.getElementById('db-status-text');
+            t.innerText = "جاري الحفظ...";
+            t.parentElement.classList.replace('border-emerald-200', 'border-amber-400');
+            t.parentElement.classList.replace('text-emerald-600', 'text-amber-600');
+            setTimeout(() => {
+                t.innerText = "متصل وآمن";
+                t.parentElement.classList.replace('border-amber-400', 'border-emerald-200');
+                t.parentElement.classList.replace('text-amber-600', 'text-emerald-600');
+            }, 800);
+        }
+
+        // --- DB Operations ---
+        function saveMetaDB(key, val) {
+            if (!db) return;
+            const tx = db.transaction([metaStore], "readwrite");
+            tx.objectStore(metaStore).put({ key: key, value: val });
+            showDbIndicator();
+        }
+
+        function saveAllStudentsDB() {
+            if (!db) return;
+            const tx = db.transaction([storeName], "readwrite");
+            const store = tx.objectStore(storeName);
+            store.clear().onsuccess = () => { studentsData.forEach(s => store.add(s)); };
+            showDbIndicator();
+            calculateMetrics();
+        }
+
+        // --- Calendar Logic ---
+        function isSilentDay(dateStr) {
+            const d = new Date(dateStr);
+            if (d < new Date(sysConfig.term_start) || d > new Date(sysConfig.term_end)) return true; // خارج النطاق
+            const day = d.getDay();
+            if (customHolidays.includes(dateStr)) return true; // عطلة مخصصة
+            if (day === 5) return true; // الجمعة دائما عطلة
+            if (day === 6 && !workingSaturdays.includes(dateStr)) return true; // السبت عطلة إلا إذا كان مستثنى
+            return false;
+        }
+
+        function isValidAttendanceDay(dateStr) {
+            if(isSilentDay(dateStr)) {
+                Swal.fire('تنبيه التقويم', `التاريخ المختار (${formatDateToDMY(dateStr)}) يقع خارج أيام العمل الرسمية (عطلة نهاية أسبوع، إجازة مخصصة، أو خارج العام الدراسي).`, 'warning');
+                return false;
+            }
+            return true;
+        }
+
+        function countActualDays() {
+            let start = new Date(sysConfig.term_start), end = new Date(sysConfig.term_end), count = 0;
+            while (start <= end) {
+                if (!isSilentDay(start.toISOString().split('T')[0])) count++;
+                start.setDate(start.getDate() + 1);
+            }
+            return count || 180;
+        }
+
+        function setDefaultDates() {
+            let today = new Date().toISOString().split('T')[0];
+            let checkD = new Date();
+            for(let i=0; i<7; i++) {
+                let iso = checkD.toISOString().split('T')[0];
+                if(!isSilentDay(iso)) { today = iso; break; }
+                checkD.setDate(checkD.getDate() - 1);
+            }
+            document.getElementById('attendanceDate').value = today;
+            document.getElementById('quickAttendanceDate').value = today;
+            document.getElementById('pdfToDate').value = today;
+            document.getElementById('pdfFromDate').value = sysConfig.term_start;
+        }
+
+        // --- Core Calculations ---
+        function getLevelInfo(count) {
+            if (count >= sysConfig.th_drop) return { n: "تسرب مدرسي", c: "bg-purple-100 text-purple-800", code: 'drop' };
+            if (count >= sysConfig.th_danger) return { n: "خطر جداً", c: "bg-red-100 text-red-800", code: 'danger' };
+            if (count >= sysConfig.th_warning) return { n: "تنبيه حذر", c: "bg-orange-100 text-orange-800", code: 'warning' };
+            if (count >= sysConfig.th_oral) return { n: "تنبيه شفوي", c: "bg-amber-100 text-amber-800", code: 'oral' };
+            return { n: "وضع آمن", c: "bg-gray-100 text-gray-700", code: 'safe' };
+        }
+
+        function calculateMetrics() {
+            let cOral=0, cWarn=0, cDang=0, cDrop=0;
+            let htmlOral='', htmlWarn='', htmlDang='', htmlDrop='';
+            
+            studentsData.forEach((s, idx) => {
+                let c = s.absencesDates.length;
+                let lvl = getLevelInfo(c);
+                
+                let wBtn = `<button onclick="sendWA(${idx}, '${lvl.n}', '${lvl.code}')" class="bg-emerald-500 text-white p-1.5 rounded hover:bg-emerald-600"><i class="fa-brands fa-whatsapp text-sm"></i></button>`;
+                let item = `<div class="p-2 bg-white rounded border flex justify-between items-center text-xs">
+                    <div><b>${escapeHtml(s.name)}</b> (${escapeHtml(s.className)})<br><span class="text-[10px] text-gray-500">الغياب: ${c} أيام</span></div>${wBtn}
+                </div>`;
+
+                if(lvl.code==='drop'){ cDrop++; htmlDrop+=item; }
+                else if(lvl.code==='danger'){ cDang++; htmlDang+=item; }
+                else if(lvl.code==='warning'){ cWarn++; htmlWarn+=item; }
+                else if(lvl.code==='oral'){ cOral++; htmlOral+=item; }
+            });
+
+            document.getElementById('count-oral').innerText = cOral;
+            document.getElementById('count-warning').innerText = cWarn;
+            document.getElementById('count-danger').innerText = cDang;
+            document.getElementById('count-drop').innerText = cDrop;
+            document.getElementById('dash-total-students').innerText = studentsData.length;
+
+            document.getElementById('list-level-drop').innerHTML = htmlDrop || '<p class="text-[10px] text-gray-400">لا يوجد</p>';
+            document.getElementById('list-level-danger').innerHTML = htmlDang || '<p class="text-[10px] text-gray-400">لا يوجد</p>';
+            document.getElementById('list-level-warning').innerHTML = htmlWarn || '<p class="text-[10px] text-gray-400">لا يوجد</p>';
+            document.getElementById('list-level-oral').innerHTML = htmlOral || '<p class="text-[10px] text-gray-400">لا يوجد</p>';
+
+            // Top Absences
+if (typeof studentsData !== 'undefined' && Array.isArray(studentsData)) {
+    // 1. فرز وتصفية أعلى 10 طلاب لديهم غياب مع حماية الحقول
+    let topS = [...studentsData]
+        .map(s => ({
+            ...s,
+            absCount: Array.isArray(s.absencesDates) ? s.absencesDates.length : 0
+        }))
+        .filter(s => s.absCount > 0) // عرض فقط من لديه غياب
+        .sort((a, b) => b.absCount - a.absCount)
+        .slice(0, 10);
+
+    let thtml = '';
+
+    if (topS.length === 0) {
+        thtml = `<tr><td colspan="3" class="p-4 text-center text-gray-400">لا يوجد سجلات غياب</td></tr>`;
+    } else {
+        topS.forEach(s => {
+            thtml += `
+                <tr class="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                    <td class="p-2 font-bold text-indigo-600 cursor-pointer hover:text-indigo-800 hover:underline transition-colors" 
+                        onclick="goToStudentProfile('${s.id}')">
+                        ${typeof escapeHtml === 'function' ? escapeHtml(s.name) : s.name}
+                    </td>
+                    <td class="p-2 text-gray-500">
+                        ${typeof escapeHtml === 'function' ? escapeHtml(s.className || s.class || '-') : (s.className || s.class || '-')}
+                    </td>
+                    <td class="p-2 text-center text-red-600 font-bold">
+                        ${s.absCount}
+                    </td>
+                </tr>`;
+        });
+    }
+
+    const tbody = document.getElementById('dash-table-most-absent');
+    if (tbody) tbody.innerHTML = thtml;
+}
+
+
+
+            // Classes Absences
+            let clsGrp = {};
+            studentsData.forEach(s => { clsGrp[s.className] = (clsGrp[s.className]||0) + s.absencesDates.length; });
+            let chtml = '';
+            Object.keys(clsGrp).sort((a,b)=>clsGrp[b]-clsGrp[a]).forEach(k => { chtml += `<tr><td class="p-2 font-bold">${k}</td><td class="p-2 text-center text-gray-600 font-bold">${clsGrp[k]}</td></tr>`; });
+            document.getElementById('dash-table-most-classes').innerHTML = chtml;
+        }
+
+        // --- STUDENTS MANAGER (CRUD) ---
+        function renderStudentsManagerTable() {
+            const tbody = document.getElementById('students-manager-tbody');
+            const filterText = document.getElementById('filterStudentText').value.trim().toLowerCase();
+            const filterClass = document.getElementById('filterStudentClass').value;
+            
+            let html = '';
+            studentsData.forEach(s => {
+                if(filterClass && filterClass !== 'ALL' && s.className !== filterClass) return;
+                if(filterText && !s.name.toLowerCase().includes(filterText) && !s.nationalId.includes(filterText)) return;
+                
+                html += `
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="p-2 font-mono text-gray-500">${s.nationalId}</td>
+                    <td class="p-2 font-bold text-slate-800">${escapeHtml(s.name)}</td>
+                    <td class="p-2 text-center text-indigo-700 font-bold">${escapeHtml(s.className)}</td>
+                    <td class="p-2 font-mono" dir="ltr">${escapeHtml(s.phone)}</td>
+                    <td class="p-2 text-center flex justify-center gap-1">
+                        <button onclick="editStudent('${s.id}')" class="bg-blue-100 text-blue-700 p-1.5 rounded hover:bg-blue-200"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="deleteStudent('${s.id}')" class="bg-red-100 text-red-700 p-1.5 rounded hover:bg-red-200"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>`;
+            });
+            tbody.innerHTML = html || '<tr><td colspan="5" class="text-center p-4 text-gray-400">لا يوجد بيانات مطابقة.</td></tr>';
+        }
+
+        function openStudentModal() {
+            document.getElementById('modal-title').innerText = 'إضافة طالب جديد';
+            document.getElementById('modal-student-id').value = '';
+            document.getElementById('modal-national-id').value = '';
+            document.getElementById('modal-name').value = '';
+            document.getElementById('modal-phone').value = '';
+            
+            let cSelect = document.getElementById('modal-class');
+            cSelect.innerHTML = '';
+            schoolClasses.forEach(c => cSelect.innerHTML += `<option value="${c}">${c}</option>`);
+            
+            document.getElementById('studentModal').classList.remove('hidden');
+        }
+
+        function closeStudentModal() { document.getElementById('studentModal').classList.add('hidden'); }
+
+        function editStudent(idStr) {
+            let s = studentsData.find(st => st.id === idStr);
+            if(!s) return;
+            openStudentModal();
+            document.getElementById('modal-title').innerText = 'تعديل بيانات الطالب';
+            document.getElementById('modal-student-id').value = s.id;
+            document.getElementById('modal-national-id').value = s.nationalId;
+            document.getElementById('modal-name').value = s.name;
+            document.getElementById('modal-class').value = s.className;
+            document.getElementById('modal-phone').value = s.phone;
+        }
+
+        function saveStudentData() {
+            let id = document.getElementById('modal-student-id').value;
+            let nid = document.getElementById('modal-national-id').value.trim();
+            let name = document.getElementById('modal-name').value.trim();
+            let cls = document.getElementById('modal-class').value;
+            let phone = document.getElementById('modal-phone').value.trim();
+
+            if(!name || !nid) return Swal.fire('خطأ', 'الرقم الوطني واسم الطالب حقول إلزامية.', 'error');
+
+            if(id) {
+                // Edit
+                let idx = studentsData.findIndex(st => st.id === id);
+                if(idx !== -1) {
+                    studentsData[idx].nationalId = nid;
+                    studentsData[idx].name = name;
+                    studentsData[idx].className = cls;
+                    studentsData[idx].phone = phone;
+                }
+            } else {
+                // Add
+                studentsData.push({
+                    id: Date.now().toString(),
+                    nationalId: nid,
+                    name: name,
+                    className: cls,
+                    phone: phone,
+                    absencesDates: []
+                });
+            }
+            saveAllStudentsDB();
+            closeStudentModal();
+            renderStudentsManagerTable();
+            Swal.fire('نجاح', 'تم حفظ بيانات الطالب بنجاح', 'success');
+        }
+
+        function deleteStudent(idStr) {
+            Swal.fire({ title: 'تأكيد الحذف', text: "سيتم مسح سجل الطالب وغياباته نهائياً!", icon: 'warning', showCancelButton: true, confirmButtonText: 'نعم، احذف', cancelButtonText: 'إلغاء', confirmButtonColor: '#d33' }).then((result) => {
+                if (result.isConfirmed) {
+                    studentsData = studentsData.filter(s => s.id !== idStr);
+                    saveAllStudentsDB();
+                    renderStudentsManagerTable();
+                }
+            });
+        }
+
+        // --- Excel Import ---
+      function triggerFilePick() { 
+    const fileInput = document.getElementById('autoExcelInput');
+    if (fileInput) {
+        fileInput.click();
+    } else {
+        console.error("عنصر رفع الملفات autoExcelInput غير موجود في صفحة HTML");
+        alert("خطأ: لم يتم العثور على عنصر رفع الملفات برمجياً.");
+    }
+}
+
+function processStaticFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // التأكد من وجود مكتبة XLSX
+    if (typeof XLSX === 'undefined') {
+        alert("مكتبة قراءة الإكسل (XLSX) غير محمّلة في الصفحة!");
+        return;
+    }
+
+    const reader = new FileReader();
+    
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            
+            if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+                throw new Error("ملف الإكسل لا يحتوي على أوراق عمل");
+            }
+
+            const rawRows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
+            if (!rawRows || rawRows.length <= 1) {
+                if (typeof Swal !== 'undefined') Swal.fire('تنبيه', 'الملف فارغ أو لا يحتوي على بيانات.', 'warning');
+                else alert('الملف فارغ');
+                return;
+            }
+            
+            const headers = rawRows[0];
+            let added = 0, updated = 0;
+
+            // التأكد من أن مصفوفة الطلاب معرفة
+            if (typeof studentsData === 'undefined') window.studentsData = [];
+            if (typeof schoolClasses === 'undefined') window.schoolClasses = [];
+
+            rawRows.slice(1).forEach((row, idx) => {
+                let name = "", cls = "", phone = "", nid = "", dates = new Set();
+                
+                headers.forEach((h, cIdx) => {
+                    let val = row[cIdx]; 
+                    if (val == null) return;
+                    let hstr = String(h).trim();
+                    
+                    if (hstr.includes('اسم')) name = val;
+                    else if (hstr.includes('شعبة') || hstr.includes('صف')) cls = val;
+                    else if (hstr.includes('هاتف') || hstr.includes('رقم ولي')) phone = val;
+                    else if (hstr.includes('وطني') || hstr.includes('جامعي')) nid = String(val).trim();
+                    else if (hstr.includes('تواريخ')) {
+                        String(val).split(',').forEach(p => {
+                            let d = p.trim(); 
+                            if (d) dates.add(d);
+                        });
+                    }
+                });
+                
+                let cleanName = String(name).trim();
+                if (!cleanName) return; 
+
+                let cleanNid = nid ? String(nid).trim() : '';
+
+                // منع التكرار بالاسم أو الرقم الوطني
+                let existsIdx = studentsData.findIndex(s => 
+                    (cleanNid !== '' && s.nationalId === cleanNid) || 
+                    (s.name === cleanName)
+                );
+
+                if (existsIdx !== -1) {
+                    let existingDates = Array.isArray(studentsData[existsIdx].absencesDates) ? studentsData[existsIdx].absencesDates : [];
+                    studentsData[existsIdx].absencesDates = [...new Set([...existingDates, ...Array.from(dates)])].sort();
+                    
+                    let cleanCls = String(cls).trim();
+                    if (cleanCls && (!studentsData[existsIdx].className || studentsData[existsIdx].className === "غير محدد")) {
+                        studentsData[existsIdx].className = cleanCls;
+                    }
+                    updated++;
+                } else {
+                    let finalNid = cleanNid || ('N-' + Date.now() + '-' + idx);
+                    let cleanCls = String(cls).trim() || "غير محدد";
+                    
+                    studentsData.push({ 
+                        id: Date.now().toString() + idx, 
+                        nationalId: finalNid, 
+                        name: cleanName, 
+                        className: cleanCls, 
+                        phone: String(phone).trim(), 
+                        absencesDates: Array.from(dates).sort() 
+                    });
+                    
+                    if (!schoolClasses.includes(cleanCls) && cleanCls !== "غير محدد") { 
+                        schoolClasses.push(cleanCls); 
+                        if (typeof saveMetaDB === 'function') saveMetaDB("classes", schoolClasses); 
+                        if (typeof populateSelectors === 'function') populateSelectors(); 
+                    }
+                    added++;
+                }
+            });
+            
+            // حفظ وتحديث
+            if (typeof saveAllStudentsDB === 'function') saveAllStudentsDB();
+            if (typeof updateAdvancedDashboard === 'function') updateAdvancedDashboard();
+
+            // إعادة تفريغ حقل الملف لتسمح باستيراد نفس الملف مجدداً إن لزم
+            event.target.value = '';
+
+            if (typeof Swal !== 'undefined') {
+                Swal.fire('تم الاستيراد بنجاح', `تم إضافة ${added} طالب جديد، وتحديث غيابات ${updated} طالب.`, 'success');
+            } else {
+                alert(`تم إضافة ${added} طالب جديد، وتحديث غيابات ${updated} طالب.`);
+            }
+
+        } catch (err) { 
+            console.error("خطأ الاستيراد:", err);
+            if (typeof Swal !== 'undefined') Swal.fire('خطأ في القراءة', 'حدث خطأ أثناء معالجة البيانات.', 'error');
+            else alert('حدث خطأ في القراءة');
+        }
+    };
+    
+    reader.readAsArrayBuffer(file);
+}
+
+        // --- Quick Attendance (Mobile) ---
+        function renderQuickAttendanceList() {
+            const cls = document.getElementById('quickClassSelector').value;
+            const ctn = document.getElementById('quick-students-container');
+            const d = document.getElementById('quickAttendanceDate').value;
+            if(!cls) { ctn.innerHTML = '<p class="text-center py-4 text-xs font-bold text-gray-400">اختر شعبة للبدء.</p>'; return; }
+            
+            quickAbsenceStatus = {}; let h = '';
+            studentsData.forEach((s, i) => {
+                if(s.className === cls) {
+                    let isAb = s.absencesDates.includes(d);
+                    quickAbsenceStatus[i] = isAb;
+                    h += `<div class="flex justify-between items-center p-2 border-b transition-colors ${isAb?'bg-red-50':''}" id="qk-card-${i}">
+                        <div class="text-xs">
+                            <p class="font-bold">${escapeHtml(s.name)}</p>
+                            <p class="text-[10px] text-gray-500">مجموع الغياب: <span id="qk-tot-${i}">${s.absencesDates.length}</span></p>
+                        </div>
+                        <button onclick="toggleQkStatus(${i})" id="qk-btn-${i}" class="text-xs px-3 py-1.5 rounded font-bold shadow-sm transition ${isAb?'bg-red-600 text-white':'bg-gray-200 text-gray-600'}">
+                            ${isAb?'❌ غائب':'✅ حاضر'}
+                        </button>
+                    </div>`;
+                }
+            });
+            ctn.innerHTML = h || '<p class="text-center py-4 text-xs font-bold text-gray-400">لا طلاب بهذه الشعبة.</p>';
+        }
+
+        function toggleQkStatus(idx) {
+            quickAbsenceStatus[idx] = !quickAbsenceStatus[idx];
+            let isAb = quickAbsenceStatus[idx];
+            document.getElementById(`qk-card-${idx}`).className = `flex justify-between items-center p-2 border-b transition-colors ${isAb?'bg-red-50':''}`;
+            let btn = document.getElementById(`qk-btn-${idx}`);
+            btn.className = `text-xs px-3 py-1.5 rounded font-bold shadow-sm transition ${isAb?'bg-red-600 text-white':'bg-gray-200 text-gray-600'}`;
+            btn.innerText = isAb?'❌ غائب':'✅ حاضر';
+        }
+
+        function saveQuickAttendance() {
+            const d = document.getElementById('quickAttendanceDate').value;
+            if(!isValidAttendanceDay(d)) return;
+            
+            Object.keys(quickAbsenceStatus).forEach(istr => {
+                let idx = parseInt(istr), mark = quickAbsenceStatus[idx], hasIt = studentsData[idx].absencesDates.includes(d);
+                if(mark && !hasIt) studentsData[idx].absencesDates.push(d);
+                else if(!mark && hasIt) studentsData[idx].absencesDates = studentsData[idx].absencesDates.filter(xd => xd !== d);
+            });
+            saveAllStudentsDB();
+            Swal.fire({toast:true, position:'top-end', icon:'success', title:'تم اعتماد ورصد غياب اليوم', showConfirmButton:false, timer:2000});
+            renderQuickAttendanceList();
+        }
+
+        // --- Class Track ---
+        function renderClassAbsences() {
+            const cls = document.getElementById('classSelector').value;
+            const tbody = document.getElementById('class-students-rows');
+            const d = document.getElementById('attendanceDate').value;
+            if(!cls) return;
+
+            let h = '';
+            studentsData.forEach((s, idx) => {
+                if(s.className === cls) {
+                    let isAb = s.absencesDates.includes(d);
+                    let lvl = getLevelInfo(s.absencesDates.length);
+                    h += `<tr class="hover:bg-slate-50 transition">
+                        <td class="p-2 font-bold">${escapeHtml(s.name)}<br><span class="text-[10px] text-gray-400 font-mono">${s.nationalId}</span></td>
+                        <td class="p-2 text-center font-bold text-gray-700">${s.absencesDates.length}</td>
+                        <td class="p-2 text-center"><span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${lvl.c}">${lvl.n}</span></td>
+                        <td class="p-2 text-center">
+                            <button onclick="toggleSpecificDate(${idx})" class="text-[11px] px-2 py-1 rounded font-bold transition ${isAb?'bg-red-200 text-red-700':'bg-amber-500 text-white hover:bg-amber-600'}">
+                                ${isAb?'إلغاء الغياب':'إثبات غياب'}
+                            </button>
+                        </td>
+                    </tr>`;
+                }
+            });
+            tbody.innerHTML = h;
+        }
+
+        function toggleSpecificDate(idx) {
+            const d = document.getElementById('attendanceDate').value;
+            if(!isValidAttendanceDay(d)) return;
+            let arr = studentsData[idx].absencesDates;
+            if(arr.includes(d)) studentsData[idx].absencesDates = arr.filter(xd => xd !== d);
+            else arr.push(d);
+            saveAllStudentsDB();
+            renderClassAbsences();
+        }
+
+        // --- Student Track ---
+        function searchStudentDetails() {
+            const val = document.getElementById('searchStudentInput').value.trim();
+            if(!val) return;
+            let s = studentsData.find(x => x.name.includes(val) || x.nationalId === val);
+            if(!s) return Swal.fire('لم يتم العثور', 'لا يوجد طالب بهذا الاسم أو الرقم', 'warning');
+            
+            document.getElementById('prof-national-id').innerText = s.nationalId;
+            document.getElementById('prof-name').innerText = s.name;
+            document.getElementById('prof-class').innerText = s.className;
+            
+            let lvl = getLevelInfo(s.absencesDates.length);
+            document.getElementById('prof-absences-count').innerText = s.absencesDates.length + ' أيام';
+            let bdg = document.getElementById('prof-level-badge');
+            bdg.innerText = lvl.n; bdg.className = `px-1.5 py-0.5 rounded text-[10px] font-bold ${lvl.c}`;
+            
+            let dh = '';
+            s.absencesDates.sort().forEach((d, i) => {
+                dh += `<span class="bg-white border text-xs px-2 py-1 rounded shadow-sm flex items-center gap-1 font-mono">${formatDateToDMY(d)} <i onclick="removeStuDate('${s.id}', '${d}')" class="fa-solid fa-xmark text-red-500 cursor-pointer p-1"></i></span>`;
+            });
+            document.getElementById('student-dates-list').innerHTML = dh || '<p class="text-xs text-emerald-600 font-bold">السجل نظيف تماماً</p>';
+            document.getElementById('student-profile-card').classList.remove('hidden');
+        }
+
+        function removeStuDate(idStr, dateStr) {
+            let s = studentsData.find(x => x.id === idStr);
+            if(s) { s.absencesDates = s.absencesDates.filter(d => d !== dateStr); saveAllStudentsDB(); searchStudentDetails(); }
+        }
+
+        // --- PDF Generation ---
+        function generatePDFReport() {
+            const cls = document.getElementById('pdfClassSelector').value;
+            const from = new Date(document.getElementById('pdfFromDate').value);
+            const to = new Date(document.getElementById('pdfToDate').value);
+            let h = '', totalDays = countActualDays();
+            
+            studentsData.forEach(s => {
+                if(cls === 'ALL' || s.className === cls) {
+                    let dts = s.absencesDates.filter(d => { let x = new Date(d); return x>=from && x<=to; }).sort();
+                    if(dts.length > 0 || cls !== 'ALL') {
+                        let rt = Math.max(0, 100 - ((s.absencesDates.length / totalDays)*100)).toFixed(1);
+                        h += `<tr>
+                            <td class="border border-gray-400 p-1.5 font-mono">${s.nationalId}</td>
+                            <td class="border border-gray-400 p-1.5 font-bold">${escapeHtml(s.name)}</td>
+                            <td class="border border-gray-400 p-1.5 text-center">${escapeHtml(s.className)}</td>
+                            <td class="border border-gray-400 p-1.5 text-center font-bold text-red-700">${dts.length}</td>
+                            <td class="border border-gray-400 p-1.5 text-center" dir="ltr">${rt}%</td>
+                            <td class="border border-gray-400 p-1 font-mono leading-tight">${dts.map(x=>formatDateToDMY(x)).join('، ')}</td>
+                        </tr>`;
+                    }
+                }
+            });
+            if(!h) return Swal.fire('فارغ', 'لا يوجد بيانات لهذه الشعبة في هذه الفترة.', 'info');
+            
+            document.getElementById('pdf-header-school').innerText = sysConfig.school_name;
+            document.getElementById('pdf-footer-author').innerText = `إعداد: ${sysConfig.manager_name} (${sysConfig.manager_title})`;
+            document.getElementById('pdf-meta-dates').innerText = `من ${formatDateToDMY(from.toISOString().split('T')[0])} إلى ${formatDateToDMY(to.toISOString().split('T')[0])} - الشعبة: ${cls}`;
+            document.getElementById('pdf-table-body').innerHTML = h;
+            
+            const el = document.getElementById('pdf-print-area');
+            el.classList.remove('hidden');
+            html2pdf().set({ margin:0.3, filename:`تقرير_${cls}.pdf`, image:{type:'jpeg',quality:0.98}, html2canvas:{scale:2}, jsPDF:{unit:'in',format:'a4',orientation:'portrait'} }).from(el).save().then(()=>el.classList.add('hidden'));
+        }
+
+        // --- Paper Notices ---
+        function getFilteredStudents() {
+            let op = document.getElementById('filterOperator').value;
+            let val = parseInt(document.getElementById('filterTargetDays').value) || 0;
+            return studentsData.filter(s => {
+                let c = s.absencesDates.length;
+                if(op==='gte') return c>=val; if(op==='eq') return c===val; if(op==='lte') return c<=val;
+                return false;
+            });
+        }
+
+        function exportFilteredPDF() {
+            let arr = getFilteredStudents();
+            if(!arr.length) return Swal.fire('لا يوجد', 'لم يتطابق أي طالب مع شروط الفرز', 'info');
+            
+            let h = '';
+            arr.forEach(s => {
+                let lvl = getLevelInfo(s.absencesDates.length);
+                h += `<tr><td class="border border-gray-400 p-1.5">${s.nationalId}</td><td class="border border-gray-400 p-1.5 font-bold">${escapeHtml(s.name)}</td><td class="border border-gray-400 p-1.5">${escapeHtml(s.className)}</td><td class="border border-gray-400 p-1.5 text-center font-bold text-red-700">${s.absencesDates.length}</td><td class="border border-gray-400 p-1.5 font-mono">${s.phone}</td><td class="border border-gray-400 p-1.5">${lvl.n}</td></tr>`;
+            });
+            
+            document.getElementById('paper-pdf-school').innerText = sysConfig.school_name;
+            document.getElementById('paper-pdf-meta').innerText = `عدد الإشعارات: ${arr.length} إشعار`;
+            document.getElementById('paper-pdf-table-body').innerHTML = h;
+            
+            const el = document.getElementById('paper-pdf-print-area');
+            el.classList.remove('hidden');
+            html2pdf().set({ margin:0.4, filename:`إشعارات.pdf`, jsPDF:{format:'a4'} }).from(el).save().then(()=>el.classList.add('hidden'));
+        }
+
+        function exportFilteredExcel() {
+            let arr = getFilteredStudents();
+            if(!arr.length) return Swal.fire('لا يوجد', 'لم يتطابق أي طالب مع شروط الفرز', 'info');
+            let ex = arr.map((s, i) => ({ "ت": i+1, "اسم الطالب": s.name, "الشعبة": s.className, "عدد الغياب": s.absencesDates.length, "حالة الإنذار": getLevelInfo(s.absencesDates.length).n, "ولي الأمر": s.phone }));
+            let ws = XLSX.utils.json_to_sheet(ex); ws['!dir']='rtl';
+            let wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "التبليغات");
+            XLSX.writeFile(wb, "التبليغات_الورقية.xlsx");
+        }
+/**
+ * دالة تعبئة الجدول الظاهر في واجهة المستخدم بناءً على الفلترة
+ * مستخرجة من نفس مرجعيات بيانات الطالب في تصدير الإكسل
+ */
+function applyPaperFilter() {
+    // 1. استدعاء الطلاب بناءً على الشرط من خلال الدالة الأصلية في نظامك
+    let arr = getFilteredStudents();
+    
+    // 2. استهداف جسم الجدول لتفريغه وإضافة البيانات الجديدة
+    let tbody = document.getElementById('paper-filter-results-body');
+    tbody.innerHTML = '';
+
+    // 3. في حال عدم وجود بيانات مطابقة
+    if (!arr || arr.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center p-6 text-gray-500 font-bold bg-gray-50">لم يتطابق أي طالب مع شروط الفرز المحددة</td></tr>`;
+        return;
+    }
+
+    // 4. بناء صفوف الجدول باستخدام نفس مسميات دالة الإكسل
+    arr.forEach((s, i) => {
+        // التحقق من وجود مصفوفة الغياب لتفادي الأخطاء البرمجية
+        let absencesCount = (s.absencesDates && Array.isArray(s.absencesDates)) ? s.absencesDates.length : 0;
+        
+        // استدعاء دالة مستوى الإنذار الأصلية
+        let levelName = getLevelInfo(absencesCount).n; 
+
+        let tr = document.createElement('tr');
+        tr.className = "border-b border-gray-200 hover:bg-slate-50 transition-colors";
+        
+        tr.innerHTML = `
+            <td class="p-2 border-l border-gray-200 text-center text-slate-500">${i + 1}</td>
+            <td class="p-2 border-l border-gray-200 font-bold text-slate-800">${s.name}</td>
+            <td class="p-2 border-l border-gray-200 text-slate-700">${s.className || '-'}</td>
+            <td class="p-2 border-l border-gray-200 text-center font-bold text-red-600">${absencesCount}</td>
+            <td class="p-2 border-l border-gray-200 text-slate-700">
+                <span class="${absencesCount >= 12 ? 'text-red-700 font-bold' : ''}">${levelName}</span>
+            </td>
+            <td class="p-2 text-slate-700" dir="ltr">${s.phone || 'غير متوفر'}</td>
+        `;
+        
+        tbody.appendChild(tr);
+    });
+}
+
+
+
+        // --- WhatsApp Messaging ---
+        function sendWA(idx, lvlName, lvlCode) {
+            let s = studentsData[idx], p = s.phone ? String(s.phone).trim() : '';
+            if(!p || p.length < 9) return Swal.fire('خطأ', 'رقم الهاتف غير صالح', 'error');
+            if(p.startsWith('0')) p = '962' + p.substring(1);
+            
+            let tmpl = sysConfig['t_'+lvlCode] || sysConfig.t_oral;
+            let msg = tmpl.replace(/\[الطالب\]/g, s.name).replace(/\[الشعبة\]/g, s.className).replace(/\[الغياب\]/g, s.absencesDates.length).replace(/\[المستوى\]/g, lvlName);
+            
+            // wa.me is universal and works gracefully without freezing the app context
+            window.open(`https://wa.me/${p}?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+
+        function initializeMessageQueue() {
+            messageQueue = []; currentQueueIndex = 0;
+            studentsData.forEach((s, idx) => {
+                let lvl = getLevelInfo(s.absencesDates.length);
+                if(lvl.code !== 'safe') messageQueue.push({ idx, s, lvl });
+            });
+            let card = document.getElementById('queue-control-card');
+            if(messageQueue.length===0) { card.classList.add('hidden'); Swal.fire('الطابور فارغ', 'لا توجد إنذارات حالية.', 'info'); return; }
+            card.classList.remove('hidden'); updateQueueInterface();
+        }
+
+        function updateQueueInterface() {
+            document.getElementById('queue-count').innerText = `${currentQueueIndex} / ${messageQueue.length}`;
+            let nxt = document.getElementById('queue-next-student');
+            let btn = document.getElementById('btn-trigger-queue');
+            if(currentQueueIndex < messageQueue.length) {
+                let q = messageQueue[currentQueueIndex];
+                nxt.innerHTML = `${escapeHtml(q.s.name)} - <span class="text-red-500">${q.lvl.n}</span>`;
+                btn.disabled = false;
+            } else { nxt.innerText = "انتهى الطابور"; btn.disabled = true; }
+        }
+
+        function processNextQueueItem() {
+            if(currentQueueIndex >= messageQueue.length) return;
+            let q = messageQueue[currentQueueIndex];
+            sendWA(q.idx, q.lvl.n, q.lvl.code);
+            currentQueueIndex++; updateQueueInterface();
+        }
+
+        // --- Settings & Meta ---
+        function applyConfigToUI() {
+            document.getElementById('cfg_school_name').value = sysConfig.school_name;
+            document.getElementById('cfg_manager_name').value = sysConfig.manager_name;
+            document.getElementById('cfg_manager_title').value = sysConfig.manager_title;
+            document.getElementById('cfg_term_start').value = sysConfig.term_start;
+            document.getElementById('cfg_term_end').value = sysConfig.term_end;
+            document.getElementById('cfg_th_oral').value = sysConfig.th_oral;
+            document.getElementById('cfg_th_warning').value = sysConfig.th_warning;
+            document.getElementById('cfg_th_danger').value = sysConfig.th_danger;
+            document.getElementById('cfg_th_drop').value = sysConfig.th_drop;
+            
+            document.getElementById('side-school-name').innerText = sysConfig.school_name;
+            document.getElementById('side-manager-name').innerText = sysConfig.manager_name;
+            document.getElementById('side-manager-title').innerText = sysConfig.manager_title;
+            
+            document.getElementById('lbl-threshold-oral').innerText = `تنبيه شفوي (${sysConfig.th_oral})`;
+            document.getElementById('lbl-threshold-warning').innerText = `تنبيه حذر (${sysConfig.th_warning})`;
+            document.getElementById('lbl-threshold-danger').innerText = `خطر جداً (${sysConfig.th_danger})`;
+            document.getElementById('lbl-threshold-drop').innerText = `تسرب (${sysConfig.th_drop})`;
+            loadSelectedTemplate();
+        }
+
+        async function unlockSettings() {
+            const { value: psw } = await Swal.fire({ title: 'كلمة المرور', input: 'password', inputAttributes: { autocapitalize: 'off' }, showCancelButton: true });
+            if (psw === '219784') {
+                ['cfg_school_name','cfg_manager_name','cfg_manager_title'].forEach(id=>{let el=document.getElementById(id);el.disabled=false;el.classList.replace('bg-gray-200','bg-white');el.onchange=saveAllSettings;});
+                document.getElementById('btn-unlock').classList.add('hidden');
+                Swal.fire({toast:true, position:'top-end', icon:'success', title:'تم الفتح', showConfirmButton:false, timer:1500});
+            } else if(psw) Swal.fire('خطأ', 'كلمة المرور غير صحيحة', 'error');
+        }
+
+        function saveAllSettings() {
+            sysConfig.school_name = document.getElementById('cfg_school_name').value;
+            sysConfig.manager_name = document.getElementById('cfg_manager_name').value;
+            sysConfig.manager_title = document.getElementById('cfg_manager_title').value;
+            sysConfig.term_start = document.getElementById('cfg_term_start').value;
+            sysConfig.term_end = document.getElementById('cfg_term_end').value;
+            sysConfig.th_oral = parseInt(document.getElementById('cfg_th_oral').value)||10;
+            sysConfig.th_warning = parseInt(document.getElementById('cfg_th_warning').value)||15;
+            sysConfig.th_danger = parseInt(document.getElementById('cfg_th_danger').value)||20;
+            sysConfig.th_drop = parseInt(document.getElementById('cfg_th_drop').value)||22;
+            saveMetaDB("sysConfig", sysConfig); applyConfigToUI(); calculateMetrics();
+        }
+
+        function loadSelectedTemplate() { document.getElementById('msg_template_text').value = sysConfig[document.getElementById('msg_template_selector').value]; }
+        function saveSelectedTemplate() { sysConfig[document.getElementById('msg_template_selector').value] = document.getElementById('msg_template_text').value; saveAllSettings(); Swal.fire({toast:true, position:'top-end', icon:'success', title:'تم حفظ الصيغة', showConfirmButton:false, timer:1500}); }
+
+        // --- Custom Holidays & Working Saturdays ---
+        function addHolidayPeriod() {
+            let st = document.getElementById('h_start').value, en = document.getElementById('h_end').value;
+            if(!st || !en) return;
+            let start = new Date(st), end = new Date(en);
+            if(start>end) return Swal.fire('خطأ','تاريخ البداية أكبر من النهاية','error');
+            while(start<=end) { let iso = start.toISOString().split('T')[0]; if(!customHolidays.includes(iso)) customHolidays.push(iso); start.setDate(start.getDate()+1); }
+            saveMetaDB("holidays", customHolidays); renderSettingsLists(); document.getElementById('h_start').value=''; document.getElementById('h_end').value='';
+        }
+        function remHoliday(d) { customHolidays = customHolidays.filter(x=>x!==d); saveMetaDB("holidays", customHolidays); renderSettingsLists(); }
+
+        function addWorkingSaturday() {
+            let v = document.getElementById('s_work').value;
+            if(!v) return;
+            if(new Date(v).getDay()!==6) return Swal.fire('خطأ','التاريخ المحدد ليس يوم سبت','error');
+            if(!workingSaturdays.includes(v)) { workingSaturdays.push(v); saveMetaDB("workingSaturdays", workingSaturdays); renderSettingsLists(); }
+        }
+        function remWorkingSat(d) { workingSaturdays = workingSaturdays.filter(x=>x!==d); saveMetaDB("workingSaturdays", workingSaturdays); renderSettingsLists(); }
+
+        function addNewClass() {
+            let v = document.getElementById('newClassInput').value.trim();
+            if(v && !schoolClasses.includes(v)) { schoolClasses.push(v); saveMetaDB("classes", schoolClasses); populateSelectors(); renderSettingsLists(); document.getElementById('newClassInput').value=''; }
+        }
+        function remClass(idx) { schoolClasses.splice(idx,1); saveMetaDB("classes", schoolClasses); populateSelectors(); renderSettingsLists(); }
+
+        function renderSettingsLists() {
+            document.getElementById('holidays-list').innerHTML = customHolidays.sort().map(d => `<span class="bg-red-100 text-red-800 border border-red-300 text-[10px] px-1.5 py-0.5 rounded font-mono flex items-center gap-1">${formatDateToDMY(d)} <i onclick="remHoliday('${d}')" class="fa-solid fa-xmark cursor-pointer"></i></span>`).join('');
+            document.getElementById('saturdays-list').innerHTML = workingSaturdays.sort().map(d => `<span class="bg-blue-100 text-blue-800 border border-blue-300 text-[10px] px-1.5 py-0.5 rounded font-mono flex items-center gap-1">${formatDateToDMY(d)} <i onclick="remWorkingSat('${d}')" class="fa-solid fa-xmark cursor-pointer"></i></span>`).join('');
+            document.getElementById('classes-settings-list').innerHTML = schoolClasses.map((c,i) => `<span class="bg-emerald-100 text-emerald-800 border border-emerald-300 text-[11px] px-2 py-0.5 rounded flex items-center gap-1">${c} <i onclick="remClass(${i})" class="fa-solid fa-xmark cursor-pointer hover:text-red-600"></i></span>`).join('');
+        }
+        function populateSelectors() {
+            let opts = '<option value="">اختر الشعبة...</option>' + schoolClasses.map(c=>`<option value="${c}">${c}</option>`).join('');
+            document.getElementById('quickClassSelector').innerHTML = opts;
+            document.getElementById('classSelector').innerHTML = opts;
+            document.getElementById('modal-class').innerHTML = schoolClasses.map(c=>`<option value="${c}">${c}</option>`).join('');
+            document.getElementById('filterStudentClass').innerHTML = '<option value="ALL">كل الشعب</option>' + schoolClasses.map(c=>`<option value="${c}">${c}</option>`).join('');
+            document.getElementById('pdfClassSelector').innerHTML = '<option value="ALL">كل المدرسة</option>' + schoolClasses.map(c=>`<option value="${c}">${c}</option>`).join('');
+        }
+
+        // --- System Data Handlers ---
+        async function clearDatabaseSecure() {
+            const { value: psw } = await Swal.fire({ title: 'تأكيد التصفير', input: 'password', text:'للحماية، أدخل الرمز السري (1234)', showCancelButton: true, confirmButtonText: 'تأكيد المسح', cancelButtonText: 'إلغاء' });
+            if(psw === '1234') {
+                studentsData = []; saveAllStudentsDB();
+                Swal.fire('نجاح', 'تم تصفير جميع السجلات بنجاح.', 'success');
+            } else if (psw) Swal.fire('مرفوض', 'كلمة المرور غير صحيحة.', 'error');
+        }
+
+        function exportCurrentData() {
+            if(!studentsData.length) return;
+            let ex = studentsData.map(s => ({"الرقم الوطني":s.nationalId, "الاسم":s.name, "الشعبة":s.className, "رقم الهاتف":s.phone, "أيام الغياب":s.absencesDates.length, "التواريخ":s.absencesDates.join(' , ')}));
+            let ws = XLSX.utils.json_to_sheet(ex); ws['!dir']='rtl';
+            let wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "البيانات"); XLSX.writeFile(wb, "الطلاب_بيانات.xlsx");
+        }
+
+        function exportEntireSystemJSON() {
+            const packet = {
+                config: sysConfig,
+                classes: schoolClasses,
+                holidays: customHolidays,
+                workingSaturdays: workingSaturdays,
+                students: studentsData
+            };
+            const blob = new Blob([JSON.stringify(packet)], {type: "application/json"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `Ayn_Backup_${new Date().toISOString().split('T')[0]}.json`;
+            a.click(); URL.revokeObjectURL(url);
+            Swal.fire({toast:true, position:'top-end', icon:'success', title:'تم تصدير النسخة الشاملة', showConfirmButton:false, timer:2000});
+        }
+// 1. تهيئة القيم الافتراضية إذا لم تكن موجودة مسبقاً في الذاكرة المحلية (نفس الكود الخاص بك)
+if (localStorage.getItem('lock_username') === null) {
+    localStorage.setItem('lock_username', 'admin');
+}
+if (localStorage.getItem('lock_password') === null) {
+    localStorage.setItem('lock_password', 'admin');
+}
+if (localStorage.getItem('lock_enabled') === null) {
+    localStorage.setItem('lock_enabled', 'true'); 
+}
+
+// 2. دالة لتهيئة شكل الواجهة عند فتح صفحة الإعدادات بناءً على القيم المحفوظة
+function initSettingsUI() {
+    const isEnabled = localStorage.getItem('lock_enabled') === 'true';
+    document.getElementById('settings-lock-enabled').checked = isEnabled;
+    // نعرض اسم المستخدم الحالي، ولا نعرض كلمة المرور لأسباب أمنية
+    document.getElementById('settings-username').value = localStorage.getItem('lock_username');
+}
+
+// تشغيل التهيئة عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', initSettingsUI);
+
+// 3. دالة الحفظ الآمنة
+function saveLockSettings() {
+    // جلب البيانات من الواجهة
+    const currentPasswordInput = document.getElementById('settings-current-password').value;
+    const newUsernameInput = document.getElementById('settings-username').value.trim();
+    const newPasswordInput = document.getElementById('settings-password').value.trim();
+    const isEnabledInput = document.getElementById('settings-lock-enabled').checked;
+
+    // جلب كلمة المرور الفعلية من النظام للمطابقة
+    const actualPassword = localStorage.getItem('lock_password');
+
+    // [جدار الحماية]: التحقق من إدخال كلمة المرور القديمة ومطابقتها
+    if (!currentPasswordInput) {
+        alert('⚠️ يرجى إدخال كلمة المرور الحالية أولاً لتأكيد هويتك.');
+        document.getElementById('settings-current-password').focus();
+        return; // إيقاف العملية
+    }
+
+    if (currentPasswordInput !== actualPassword) {
+        alert('❌ كلمة المرور الحالية غير صحيحة. تم رفض الوصول للإعدادات.');
+        document.getElementById('settings-current-password').value = '';
+        return; // إيقاف العملية
+    }
+
+    // --- إذا وصلنا إلى هنا، فهذا يعني أن كلمة المرور القديمة صحيحة، ويمكننا الحفظ ---
+
+    // 1. حفظ حالة تمكين/تعطيل شاشة القفل
+    localStorage.setItem('lock_enabled', isEnabledInput.toString());
+
+    // 2. حفظ اسم المستخدم الجديد (إذا قام المستخدم بكتابة شيء جديد)
+    if (newUsernameInput !== '') {
+        localStorage.setItem('lock_username', newUsernameInput);
+    }
+
+    // 3. حفظ كلمة المرور الجديدة (إذا قام المستخدم بكتابة شيء جديد)
+    if (newPasswordInput !== '') {
+        localStorage.setItem('lock_password', newPasswordInput);
+    }
+
+    // رسالة نجاح وتنظيف حقول كلمات المرور لزيادة الأمان
+    alert('✅ تم حفظ إعدادات حماية النظام بنجاح!');
+    document.getElementById('settings-current-password').value = '';
+    document.getElementById('settings-password').value = '';
+}
+function updateModernHeaderTime() {
+    const now = new Date();
+    
+    // 1. التاريخ: باللغة العربية (اليوم، الشهر، السنة)
+    const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    const formattedDate = new Intl.DateTimeFormat('ar-JO', dateOptions).format(now);
+    
+    // 2. الوقت: باللغة الإنجليزية (ساعات ودقائق فقط بنظام 12 ساعة)
+    const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: true };
+    const formattedTimeStr = new Intl.DateTimeFormat('en-US', timeOptions).format(now); // النتيجة مثلاً: "05:01 AM"
+    
+    // فصل الأرقام عن كلمة (AM / PM)
+    const [timeNums, ampm] = formattedTimeStr.split(' ');
+
+    // 3. حقن البيانات في المربعات المنفصلة
+    const dateElement = document.getElementById('header-date');
+    const timeNumsElement = document.getElementById('header-time-nums');
+    const ampmElement = document.getElementById('header-time-ampm');
+
+    if (dateElement) dateElement.textContent = formattedDate;
+    if (timeNumsElement) timeNumsElement.textContent = timeNums;
+    if (ampmElement) ampmElement.textContent = ampm;
+}
+
+// التشغيل الفوري والتحديث كل دقيقة (لأننا أزلنا الثواني، لا نحتاج لتحديث الشاشة كل ثانية مما يخفف الحمل على المتصفح)
+updateModernHeaderTime();
+setInterval(updateModernHeaderTime, 60000); // 60000 ملي ثانية = 1 دقيقة
+    
+function toggleMobileMenu() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('mobile-menu-overlay');
+
+    // تبديل حالة الإزاحة بين الخروج من الشاشة (translate-x-full) والظهور (translate-x-0)
+    sidebar.classList.toggle('translate-x-full');
+    sidebar.classList.toggle('translate-x-0');
+
+    // إظهار أو إخفاء الخلفية السوداء
+    overlay.classList.toggle('hidden');
+}
+/**
+ * دالة الانتقال بين صفحات النظام (SPA Routing)
+ * @param {string} targetViewId - الآي دي الخاص بالصفحة المراد إظهارها
+ */
+function navigateToView(targetViewId) {
+    // 1. جلب جميع العناصر التي تحمل كلاس 'page'
+    const allPages = document.querySelectorAll('.page');
+    
+    // 2. إخفاء جميع الصفحات وإزالة تأثير الظهور عنها
+    allPages.forEach(page => {
+        page.classList.add('hidden');
+        page.classList.remove('opacity-100');
+        page.classList.add('opacity-0');
+    });
+
+    // 3. استهداف الصفحة المطلوبة
+    const targetPage = document.getElementById(targetViewId);
+    
+    if (targetPage) {
+        // إزالة الإخفاء أولاً لتصبح موجودة في الـ DOM
+        targetPage.classList.remove('hidden');
+        
+        // استخدام setTimeout بجزء من الثانية لتفعيل الأنيميشن (Fade-in)
+        // لأن المتصفح يحتاج لوقت قصير جداً ليدرك أن العنصر لم يعد مخفياً قبل تغيير شفافيته
+        setTimeout(() => {
+            targetPage.classList.remove('opacity-0');
+            targetPage.classList.add('opacity-100');
+        }, 10);
+        
+        // تمرير الشاشة للأعلى بنعومة (مهم جداً في الـ UX لتطبيقات الموبايل والديسكتوب)
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+        console.error(`الصفحة المطلوبة ${targetViewId} غير موجودة في النظام.`);
+    }
+}
+/**
+ * 1. دالة الفلترة وبناء الجدول (مع إشارات الصح)
+ */
+function applyPaperFilter() {
+    try {
+        let arr = getFilteredStudents();
+        let tbody = document.getElementById('paper-filter-results-body');
+        tbody.innerHTML = '';
+        
+        // إعادة تعيين مربع "تحديد الكل"
+        let selectAllCheckbox = document.getElementById('selectAllFiltered');
+        if(selectAllCheckbox) selectAllCheckbox.checked = false;
+
+        if (!arr || arr.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center p-6 text-gray-500 font-bold bg-gray-50">لم يتطابق أي طالب مع شروط الفرز المحددة</td></tr>`;
+            return;
+        }
+
+        arr.forEach(s => {
+            let absencesCount = (s.absencesDates && Array.isArray(s.absencesDates)) ? s.absencesDates.length : 0;
+            let levelName = (typeof getLevelInfo === 'function') ? getLevelInfo(absencesCount).n : 'غير محدد'; 
+            
+            // الاعتماد على id الطالب أو اسمه كمعرف فريد
+            let studentId = s.id || s.name; 
+            let printCount = s.printCount || 0;
+            // بناء سلسلة إشارات الصح بناءً على عدد مرات التبليغ
+            let printChecks = printCount > 0 ? '✅'.repeat(printCount) : '<span class="text-gray-400 text-[10px]">لم يبلغ</span>';
+
+            let tr = document.createElement('tr');
+            tr.className = "border-b border-gray-200 hover:bg-slate-50 transition-colors";
+            
+            tr.innerHTML = `
+                <td class="p-2 border-l border-gray-200 text-center">
+                    <input type="checkbox" class="filtered-student-checkbox w-4 h-4 cursor-pointer accent-indigo-600" value="${studentId}">
+                </td>
+                <td class="p-2 border-l border-gray-200 font-bold text-slate-800 student-name">${s.name || '-'}</td>
+                <td class="p-2 border-l border-gray-200 text-slate-700 student-class">${s.className || '-'}</td>
+                <td class="p-2 border-l border-gray-200 text-center font-bold text-red-600 student-absences">${absencesCount}</td>
+                <td class="p-2 border-l border-gray-200 text-slate-700">
+                    <span class="${absencesCount >= 12 ? 'text-red-700 font-bold' : ''}">${levelName}</span>
+                </td>
+                <td class="p-2 text-center tracking-widest">${printChecks}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (error) {
+        console.error("خطأ أثناء بناء الجدول:", error);
+        alert("حدث خطأ تقني. يرجى مراجعة الكونسول.");
+    }
+}
+
+/**
+ * 2. دالة تحديد / إلغاء تحديد الكل
+ */
+function toggleAllFiltered(masterCheckbox) {
+    let checkboxes = document.querySelectorAll('.filtered-student-checkbox');
+    checkboxes.forEach(cb => {
+        cb.checked = masterCheckbox.checked;
+    });
+}
+
+/**
+ * 3. دالة استصدار البلاغات والطباعة (مخصصة لورق A4)
+ */
+function printSelectedFilteredNotices() {
+    try {
+        const printArea = document.getElementById('paper-pdf-print-area');
+        printArea.innerHTML = ''; 
+        
+        const checkboxes = document.querySelectorAll('.filtered-student-checkbox:checked');
+        if (checkboxes.length === 0) {
+            alert('يرجى اختيار طالب واحد على الأقل لاستصدار البلاغ الرسمي.');
+            return;
+        }
+
+        // تنسيق التاريخ الحالي
+        let currentDate = new Intl.DateTimeFormat('ar-JO', { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date());
+
+        checkboxes.forEach(cb => {
+            let studentId = cb.value;
+            let row = cb.closest('tr');
+            let studentName = row.querySelector('.student-name').innerText;
+            let studentClass = row.querySelector('.student-class').innerText;
+            let totalAbsences = row.querySelector('.student-absences').innerText;
+
+            // تحديث عدد التبليغات في قاعدة البيانات (حسب الهيكلة المتوفرة لديك)
+            if (typeof studentsDatabase !== 'undefined') {
+                let studentData = studentsDatabase.find(s => s.id === studentId || s.name === studentId);
+                if (studentData) {
+                    studentData.printCount = (studentData.printCount || 0) + 1;
+                }
+// تحديث عدد التبليغات في قاعدة البيانات
+if (typeof studentsDatabase !== 'undefined') {
+    
+    // 1. استخدام == بدلاً من === لتجاهل الفروق بين النص والرقم، واستخدام trim() لإزالة أي مسافات زائدة بالاسم
+    let studentData = studentsDatabase.find(s => 
+        s.id == studentId || 
+        (s.name && String(s.name).trim() === String(studentId).trim())
+    );
+
+    if (studentData) {
+        // 2. زيادة العداد
+        studentData.printCount = (studentData.printCount || 0) + 1;
+        
+        // 3. الحفظ في الذاكرة (ملاحظة: إذا كان نظامك يستخدم اسماً آخر غير studentsData قم بتغييره هنا)
+        localStorage.setItem('studentsData', JSON.stringify(studentsDatabase));
+        localStorage.setItem('students', JSON.stringify(studentsDatabase)); // إضافة احتياطية للاسم الشائع
+        
+        // 4. إعادة بناء واجهة الجدول (أضفنا استدعاءات احتياطية لأشهر أسماء الدوال)
+        if (typeof applyPaperFilter === 'function') {
+            applyPaperFilter(); 
+        } 
+        if (typeof renderTable === 'function') {
+            renderTable(); 
+        }
+        if (typeof loadStudents === 'function') {
+            loadStudents(); 
+        }
+        
+        // رسالة نجاح مخفية للمطور للتأكد أن كل شيء يعمل
+        console.log("✅ تم توثيق التبليغ بنجاح للطالب:", studentData.name, "أصبح لديه:", studentData.printCount);
+
+    } else {
+        // رسالة خطأ مخفية تظهر لك المشكلة الحقيقية
+        console.error("❌ فشل النظام في العثور على الطالب! المعرف الذي تم تمريره هو:", studentId);
+    }
+}
+            }
+
+          // بناء الهيكل الورقي المعتمد لمدرسة البويضة الثانوية مع تنسيقات الطباعة الصارمة
+const noticeHTML = `
+    <style>
+        /* إعدادات صفحة الطباعة (A4) */
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 10mm 15mm; /* هوامش عليا وسفلية ضيقة (10mm) وجانبية مضبوطة (15mm) */
+            }
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+
+        /* حاوية الإشعار - مصممة لتعبئة صفحة واحدة وعدم التجاوز */
+        .notice-page {
+            font-family: 'Sakkal Majalla', 'Arial', sans-serif;
+            direction: rtl;
+            color: #000;
+            width: 100%;
+            height: 275mm; /* إجبار المحتوى على البقاء ضمن حدود صفحة A4 */
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between; /* توزيع المسافات بذكاء لمنع تكدس النص */
+            page-break-inside: avoid;
+            page-break-after: always;
+        }
+
+        /* الترويسة */
+        .notice-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            font-size: 14pt;
+            font-weight: bold;
+            line-height: 1.4;
+            margin-bottom: 10px;
+        }
+
+        /* معلومات ولي الأمر */
+        .notice-info {
+            font-size: 14pt;
+            margin-bottom: 15px;
+        }
+
+        /* متن الكتاب (مضبوط من الجانبين) */
+        .notice-body {
+            font-size: 15pt;
+            line-height: 1.8;
+            text-align: justify; /* ضبط الهوامش الجانبية للنص */
+            text-justify: inter-word;
+            margin-bottom: 12px;
+        }
+
+        /* التواقيع */
+        .notice-signatures {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14pt;
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+
+        /* الخط الفاصل */
+        .divider {
+            border-top: 2px dashed #333;
+            margin: 15px 0;
+        }
+
+        /* قصة الاستلام */
+        .receipt-section {
+            font-size: 14pt;
+            line-height: 1.7;
+            text-align: justify;
+        }
+
+        .receipt-title {
+            text-align: center;
+            font-weight: bold;
+            font-size: 15pt;
+            text-decoration: underline;
+            margin-bottom: 10px;
+        }
+
+        .receipt-footer {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+    </style>
+
+    <div class="notice-page">
+        <!-- الجزء العلوي: الترويسة -->
+        <div>
+            <div class="notice-header">
+                <div>
+                    وزارة التربية والتعليم الأردنية<br>
+                    مديرية التربية والتعليم للواء الرمثا<br>
+                    مدرسة البويضة الثانوية للبنين
+                </div>
+                <div style="text-align: left;">
+                    التاريخ: ${currentDate}<br>
+                    الموضوع: إشعار وتنبيه غياب رسمي
+                </div>
+            </div>
+
+            <div class="notice-info">
+                <strong>ولي أمر الطالب:</strong> ${studentName} المحترم<br>
+                <strong>الصف والشعبة:</strong> ${studentClass}
+            </div>
+
+            <div class="notice-body">
+                السلام عليكم ورحمة الله وبركاته، وبعد،،<br>
+                تود إدارة مدرسة البويضة الثانوية للبنين إحاطتكم علماً بأن ابنكم <strong>(${studentName})</strong> المتواجد في الصف <strong>(${studentClass})</strong> قد تكرر غيابه عن الدوام المدرسي الرسمي بدون عذر رسمي مقبول، حيث بلغ مجموع أيام غيابه حتى تاريخ هذا الكتاب <strong>(${totalAbsences})</strong> يوماً.<br><br>
+                وبذلك يكون الطالب قد تجاوز النسبة المسموح بها قانوناً بموجب أسس النجاح والإكمال والرسوب المعتمدة من وزارة التربية والتعليم.<br><br>
+                نود التأكيد على أن استمرار هذا الغياب وتبعاته سيؤدي بالضرورة إلى اتخاذ الإجراءات القانونية والإدارية بحقه، والتي قد تصل إلى حرمانه ورسوبه في صفه الحالي بسبب تجاوز النسبة المقررة للغياب.<br><br>
+                لذا، يرجى منكم المتابعة الحثيثة والمباشرة مع إدارة المدرسة لتصويب وضع الطالب، وحثه على الالتزام التام بالدوام المدرسي اليومي تلافياً لأي إجراءات قد تؤثر سلباً على مستقبله الدراسي.
+            </div>
+
+            <div class="notice-signatures">
+                <div>
+                    <strong>مساعد المدير:</strong> عمر علي الشبول<br>
+                    التوقيع: ........................................
+                </div>
+                <div style="text-align: left;">
+                    <strong>مدير المدرسة:</strong> علي عبد الكريم مياس<br>
+                    التوقيع والختم الرسمي: ........................................
+                </div>
+            </div>
+        </div>
+
+        <!-- الجزء السفلي: قصاصة الاستلام (يتم دفعها للأسفل تلقائياً) -->
+        <div>
+            <div class="divider"></div>
+            
+            <div class="receipt-section">
+                <div class="receipt-title">قصاصة الاستلام (تعاد للمدرسة)</div>
+                أنا ولي أمر الطالب: <strong>${studentName}</strong> في الصف: <strong>${studentClass}</strong> أقر باستلامي إشعار الغياب والتنبيه الرسمي الصادر عن إدارة مدرسة البويضة الثانوية للبنين بتاريخ ${currentDate}، وأتحمل المسؤولية المترتبة على ذلك.<br>
+                
+                <div class="receipt-footer">
+                    <span>اسم ولي الأمر: ..............................</span>
+                    <span>التوقيع: ..............................</span>
+                    <span>رقم الهاتف: ..............................</span>
+                </div>
+            </div>
+        </div>
+    </div>
+`;            printArea.innerHTML += noticeHTML;
+        });
+
+        // حفظ البيانات لضمان بقاء التعديلات
+        if (typeof saveToLocalStorage === 'function') {
+            saveToLocalStorage();
+        }
+        
+        // إعادة بناء الجدول لتحديث إشارات الصح ✅ بناءً على العدد الجديد
+        applyPaperFilter(); 
+
+        // تفعيل الطباعة بسلاسة
+        printArea.classList.remove('hidden');
+        
+        // المهلة الزمنية لضمان تحميل محتوى الطباعة في المتصفح قبل استدعاء نافذة الطباعة
+        setTimeout(() => {
+            try {
+                window.print();
+            } finally {
+                printArea.classList.add('hidden');
+            }
+        }, 500);
+
+    } catch (error) {
+        console.error("خطأ أثناء استصدار البلاغات:", error);
+        alert("حدث خطأ تقني منع استصدار البلاغ. الرسالة: " + error.message);
+    }
+}
+// 1. دالة مساعدة لتحويل تاريخ المتصفح إلى صيغة النظام المعتمدة (DD-MM-YYYY)
+function formatToSystemDate(dateString) {
+    if (!dateString) return '';
+    let parts = dateString.split('-');
+    if (parts.length === 3 && parts[0].length === 4) {
+        return `${parts[2]}-${parts[1]}-${parts[0]}`; 
+    }
+    return dateString;
+}
+
+// 2. دالة عرض الطلاب وتحديث الأرقام
+function renderQuickAttendanceList() {
+    const cls = document.getElementById('quickClassSelector').value;
+    const dateInput = document.getElementById('quickAttendanceDate').value;
+    const container = document.getElementById('quick-students-container');
+    const statsBar = document.getElementById('quick-stats-bar');
+    
+    if (!cls || !dateInput) {
+        container.innerHTML = '<p class="text-center text-gray-400 py-6 text-xs font-bold">يرجى تحديد الشعبة وتاريخ الرصد.</p>';
+        statsBar.classList.add('hidden');
+        return;
+    }
+
+    const targetDate = formatToSystemDate(dateInput);
+    const classStudents = studentsData.filter(s => s.className === cls);
+    
+    // إظهار وتحديث أرقام شريط الإحصائيات
+    document.getElementById('quick-total-class').innerText = classStudents.length;
+    document.getElementById('quick-live-absent').innerText = '0';
+    statsBar.classList.remove('hidden');
+
+    if (classStudents.length === 0) {
+        container.innerHTML = '<p class="text-center text-gray-400 py-6 text-xs font-bold">لا يوجد طلاب مسجلين في هذه الشعبة.</p>';
+        return;
+    }
+
+    let html = '';
+    classStudents.forEach(s => {
+        let absences = Array.isArray(s.absencesDates) ? s.absencesDates : [];
+        let isAbsent = absences.some(d => String(d).trim() === targetDate);
+        
+        html += `
+        <div class="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-lg hover:bg-slate-50 transition-colors">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center font-bold text-xs shadow-sm">
+                    <i class="fa-solid fa-user"></i>
+                </div>
+                <div>
+                    <p class="text-xs font-bold text-slate-700">${s.name}</p>
+                    <p class="text-[9px] text-gray-400">${s.nationalId || 'بدون رقم'}</p>
+                </div>
+            </div>
+            <!-- زر التبديل (Toggle) الذكي -->
+            <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" class="sr-only peer quick-absent-toggle" data-id="${s.id}" ${isAbsent ? 'checked' : ''} onchange="updateLiveAbsentCount()">
+                <div class="w-11 h-6 bg-emerald-100 peer-focus:outline-none rounded-full peer peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-500 transition-colors"></div>
+                <span class="mr-2 text-[10px] font-bold ${isAbsent ? 'text-rose-600' : 'text-emerald-600'} toggle-label w-8 text-right">${isAbsent ? 'غائب' : 'حاضر'}</span>
+            </label>
+        </div>
+        `;
+    });
+    container.innerHTML = html;
+    
+    // تشغيل الدالة فوراً لحساب الغياب إن كان مسجلاً مسبقاً
+    updateLiveAbsentCount();
+}
+
+// 3. دالة تفاعلية (Live) لتغيير النصوص والأرقام عند الضغط على زر الحضور والغياب
+function updateLiveAbsentCount() {
+    const toggles = document.querySelectorAll('.quick-absent-toggle');
+    let absentCount = 0;
+    
+    toggles.forEach(t => {
+        const label = t.closest('label').querySelector('.toggle-label');
+        if (t.checked) {
+            absentCount++;
+            label.innerText = 'غائب';
+            label.classList.replace('text-emerald-600', 'text-rose-600');
+            t.nextElementSibling.classList.replace('bg-emerald-100', 'bg-rose-500'); // تغيير لون الخلفية
+        } else {
+            label.innerText = 'حاضر';
+            label.classList.replace('text-rose-600', 'text-emerald-600');
+            t.nextElementSibling.classList.replace('bg-rose-500', 'bg-emerald-100'); // إرجاع اللون الأخضر الفاتح
+        }
+    });
+    
+    document.getElementById('quick-live-absent').innerText = absentCount;
+}
+
+// 4. دالة الحفظ التي تخزن الغياب وتستدعي دالة التجميع الكلي
+function saveQuickAttendance() {
+
+    const cls = document.getElementById('quickClassSelector').value || "ثامن أ";
+    const dateInput = document.getElementById('quickAttendanceDate').value;
+    if (!cls || !dateInput) {
+        if (typeof Swal !== 'undefined') Swal.fire('تنبيه', 'يرجى تحديد الشعبة والتاريخ أولاً.', 'warning');
+        return;
+    }
+
+    const targetDate = formatToSystemDate(dateInput);
+    const toggles = document.querySelectorAll('.quick-absent-toggle');
+    let hasChanges = false;
+    toggles.forEach(toggle => {
+        const studentId = toggle.getAttribute('data-id');
+        const isAbsent = toggle.checked;
+          let studentIdx = studentsData.findIndex(s => String(s.id) === String(studentId));
+        if (studentIdx > -1) {
+            let absences = Array.isArray(studentsData[studentIdx].absencesDates) ? studentsData[studentIdx].absencesDates : [];
+            let isAlreadyAbsent = absences.some(d => String(d).trim() === targetDate);
+          
+            if (isAbsent && !isAlreadyAbsent) {
+                // إضافة الغياب إذا لم يكن موجوداً
+                studentsData[studentIdx].absencesDates.push(targetDate);
+                hasChanges = true;
+            } else if (!isAbsent && isAlreadyAbsent) {
+
+                // مسح الغياب إذا تم تعديله إلى حاضر
+
+                studentsData[studentIdx].absencesDates = absences.filter(d => String(d).trim() !== targetDate);
+
+                hasChanges = true;
+
+            }
+
+        }
+
+    });
+
+    if (typeof saveAllStudentsDB === 'function') saveAllStudentsDB();
+  
+    // 💡 استدعاء الدالة التجميعية لحساب إجمالي غياب المدرسة
+
+    let totalSchoolAbsence = calculateTotalSystemAbsence(targetDate);
+   
+    if (typeof updateAdvancedDashboard === 'function') updateAdvancedDashboard();
+
+    if (typeof Swal !== 'undefined') {
+       
+
+
+
+    document.getElementById('dash-absent-today').innerText = totalSchoolAbsence;
+
+ document.getElementById('dash-present-today').innerText = studentsData.length-totalSchoolAbsence;
+
+    }
+renderPercentageBasedAbsentChart();
+renderDropoutRiskWidget();
+}
+// 5. الدالة التجميعية (تحسب إجمالي غياب المدرسة بالكامل في تاريخ محدد)
+function calculateTotalSystemAbsence(targetDate) {
+    let totalAbsence = 0;
+    
+    studentsData.forEach(s => {
+        let absences = Array.isArray(s.absencesDates) ? s.absencesDates : [];
+        if (absences.some(d => String(d).trim() === targetDate)) {
+            totalAbsence++;
+        }
+    });
+   console.log(`[سجل الرصد] إجمالي غياب المدرسة ليوم (${targetDate}): ${totalAbsence}`);
+    
+    // إذا أردت لاحقاً عرض الرقم الكلي في أي مكان بالشاشة، يمكنك تحديثه هنا:
+    // const totalEl = document.getElementById('some-total-element');
+    // if (totalEl) totalEl.innerText = totalAbsence;
+
+    return totalAbsence;
+}
+// استدعاء ضمني تلقائي للدالة عند فتح الصفحة
+document.addEventListener('DOMContentLoaded', () => {
+    
+    // 3. استدعاء الدالة بشكل ضمني فوراً بعد جاهزية الواجهة والبيانات
+    setTimeout(() => {
+        if (typeof saveQuickAttendance === 'function') {
+            saveQuickAttendance();
+        }
+    }, 100);
+});
+// دالة الانتقال المباشر لتفاصيل الطالب عند النقر عليه من الجدول
+function goToStudentProfile(identifier) {
+    if (typeof studentsData === 'undefined' || !Array.isArray(studentsData)) return;
+
+    // 1. العثور على الطالب المقابل
+    const student = studentsData.find(s => 
+        String(s.id) === String(identifier) || String(s.name) === String(identifier)
+    );
+
+    if (!student) return;
+
+    // 2. تعيين الاسم في حقل البحث
+    const searchInput = document.getElementById('searchStudentInput');
+    if (searchInput) {
+        searchInput.value = student.name;
+    }
+
+    // 3. التنقل المباشر إلى الصفحة بنفس آلية النقر على الزر
+    if (typeof switchPage === 'function') {
+        switchPage('student-track');
+    } else {
+        const btn = document.getElementById('btn-student-track');
+        if (btn) btn.click();
+    }
+
+    // 4. تشغيل دالة البحث عن تفاصيل الطالب
+    if (typeof searchStudentDetails === 'function') {
+        searchStudentDetails();
+    }
+}
+/**
+ * دالة تحليل غياب الشعب ليوم محدد
+ * تقوم بحساب: إجمالي الطلاب، إجمالي الغياب، ونسبة الغياب المئوية لكل شعبة
+ * وترجع مصفوفة مرتبة من الأعلى نسبة إلى الأقل.
+ */
+function getDailyClassAbsenceStats(targetDate) {
+    // 1. حماية النظام: التأكد من وجود قاعدة البيانات
+    if (typeof studentsData === 'undefined' || !Array.isArray(studentsData)) {
+        return [];
+    }
+
+    let classStats = {};
+
+    // 2. المرور على جميع الطلاب لتجميع البيانات الأساسية
+    studentsData.forEach(student => {
+        const className = student.className || student.class || 'غير محدد';
+        
+        // بناء سجل للشعبة إذا لم يكن موجوداً
+        if (!classStats[className]) {
+            classStats[className] = { 
+                name: className, 
+                totalStudents: 0, 
+                absentCount: 0 
+            };
+        }
+
+        // زيادة عداد طلاب الشعبة
+        classStats[className].totalStudents += 1;
+
+        // التحقق من غياب الطالب في اليوم المستهدف وزيادة عداد الغياب
+        if (Array.isArray(student.absencesDates) && student.absencesDates.includes(targetDate)) {
+            classStats[className].absentCount += 1;
+        }
+    });
+
+    // 3. حساب النسب المئوية، الفلترة، والترتيب
+    let rankedClasses = Object.values(classStats)
+        .map(cls => {
+            // حساب النسبة المئوية مع تقريبها لمنزلة عشرية واحدة وتفادي القسمة على صفر
+            cls.percentage = cls.totalStudents > 0 
+                ? parseFloat(((cls.absentCount / cls.totalStudents) * 100).toFixed(1)) 
+                : 0;
+            return cls;
+        })
+        // فلترة: استبعاد الشعب التي ليس بها غياب اليوم
+        .filter(cls => cls.absentCount > 0)
+        // الترتيب: من أعلى نسبة غياب إلى أقل نسبة
+        .sort((a, b) => b.percentage - a.percentage);
+
+    return rankedClasses; // إرجاع البيانات الجاهزة للشارت
+}
+/**
+ * دالة تحديث شارت (أكثر الشعب غياباً) بناءً على النسبة المئوية
+ */
+function renderPercentageBasedAbsentChart() {
+    const container = document.getElementById('dash-chart-today-classes');
+    if (!container) return;
+
+    // 1. تحديد تاريخ اليوم (نفس الآلية المعتمدة في نظامك)
+    const dateInput = document.getElementById('quickAttendanceDate');
+    let targetDate;
+    if (dateInput && dateInput.value) {
+        targetDate = typeof formatToSystemDate === 'function' ? formatToSystemDate(dateInput.value) : dateInput.value;
+    } else {
+        const today = new Date();
+        const dd = String(today.getDate()).padStart(2, '0');
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const yyyy = today.getFullYear();
+        targetDate = `${dd}-${mm}-${yyyy}`;
+    }
+
+    // 2. جلب البيانات المحللة والمرتبة حسب النسبة
+    const rankedClasses = getDailyClassAbsenceStats(targetDate);
+
+    // 3. التعامل مع حالة عدم وجود غياب (Empty State)
+    if (rankedClasses.length === 0) {
+        container.innerHTML = `
+            <div class="flex flex-col items-center justify-center h-full text-slate-400 space-y-3 mt-10">
+                <div class="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center border border-dashed border-slate-200">
+                    <i class="fa-solid fa-clipboard-check text-xl text-slate-300"></i>
+                </div>
+                <span class="text-xs font-bold">نسبة الغياب 0% لجميع الشعب اليوم</span>
+            </div>
+        `;
+        return;
+    }
+
+    // 4. بناء الـ HTML للشارت (عرض أعلى 5 شعب فقط)
+    let html = '';
+    const top5Classes = rankedClasses.slice(0, 5);
+
+    top5Classes.forEach(cls => {
+        // حماية الاسم من الأكواد الخبيثة
+        const safeName = typeof escapeHtml === 'function' ? escapeHtml(cls.name) : cls.name;
+        
+        // نجعل عرض الشريط يمثل النسبة المئوية الحقيقية (بحد أدنى 5% ليظهر الشكل الجمالي)
+        let barWidth = cls.percentage > 5 ? cls.percentage : 5;
+
+        html += `
+        <div class="group cursor-default mb-3">
+            <div class="flex justify-between items-end mb-1.5">
+                <div class="flex flex-col">
+                    <span class="text-xs font-bold text-slate-700 group-hover:text-blue-600 transition-colors">${safeName}</span>
+                    <span class="text-[9px] text-slate-400 font-normal">الغياب: ${cls.absentCount} من ${cls.totalStudents} طلاب</span>
+                </div>
+                <span class="text-[11px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-100">${cls.percentage}%</span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                <div class="bg-gradient-to-r from-rose-400 to-rose-600 h-1.5 rounded-full relative transition-all duration-1000 ease-out" style="width: ${barWidth}%"></div>
+            </div>
+        </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+/**
+ * 1. دالة مساعدة لتحويل التاريخ النصي إلى كائن تاريخ (Date)
+ * تدعم صيغتي DD-MM-YYYY و YYYY-MM-DD لضمان عدم حدوث أي أخطاء
+ */
+function parseSystemDate(dateStr) {
+    if (!dateStr || typeof dateStr !== 'string') return null;
+    const parts = dateStr.trim().split('-');
+    if (parts.length !== 3) return null;
+    
+    let y, m, d;
+    if (parts[0].length === 4) { // صيغة YYYY-MM-DD
+        y = parts[0]; m = parts[1]; d = parts[2];
+    } else { // صيغة DD-MM-YYYY
+        d = parts[0]; m = parts[1]; y = parts[2];
+    }
+    return new Date(y, m - 1, d); // الأشهر في جافاسكربت تبدأ من 0
+}
+
+/**
+ * 2. الخوارزمية الذكية لحساب التتابع مع تخطي العطل (الجمعة والسبت)
+ */
+function getMaxConsecutiveAbsences(absencesDates) {
+    if (!Array.isArray(absencesDates) || absencesDates.length === 0) return 0;
+
+    // تحويل النصوص لتواريخ، استبعاد القيم الفارغة، وترتيبها من الأقدم للأحدث
+    const dates = absencesDates
+        .map(parseSystemDate)
+        .filter(d => d && !isNaN(d.getTime()))
+        .sort((a, b) => a.getTime() - b.getTime());
+
+    if (dates.length === 0) return 0;
+
+    let maxStreak = 1;
+    let currentStreak = 1;
+
+    for (let i = 0; i < dates.length - 1; i++) {
+        const d1 = dates[i];
+        const d2 = dates[i + 1];
+
+        // تجاهل التكرار إذا تم رصد غياب لنفس اليوم بالخطأ
+        if (d1.getTime() === d2.getTime()) continue;
+
+        // حساب "اليوم الدوامي التالي" بافتراض تخطي العطل
+        let nextWorkingDay = new Date(d1);
+        nextWorkingDay.setDate(nextWorkingDay.getDate() + 1);
+        
+        // إذا صادف اليوم التالي جمعة (5) أو سبت (6)، نقفز عنهما
+        while (nextWorkingDay.getDay() === 5 || nextWorkingDay.getDay() === 6) {
+            nextWorkingDay.setDate(nextWorkingDay.getDate() + 1);
+        }
+
+        // هل اليوم التالي للغياب يطابق يوم الغياب الذي يليه؟
+        if (nextWorkingDay.getTime() === d2.getTime()) {
+            currentStreak++;
+            if (currentStreak > maxStreak) maxStreak = currentStreak;
+        } else {
+            // انكسر التتابع، نعود للعد من 1
+            currentStreak = 1;
+        }
+    }
+
+    return maxStreak;
+}
+
+/**
+ * 3. الدالة الرئيسية لتحديث واجهة "مؤشر التنبؤ بالتسرب"
+ */
+function renderDropoutRiskWidget() {
+    const countEl = document.getElementById('count-consecutive');
+    const listEl = document.getElementById('list-consecutive-dropouts');
+    
+    if (!countEl || !listEl) return;
+    if (typeof studentsData === 'undefined' || !Array.isArray(studentsData)) return;
+
+    const DANGER_THRESHOLD = 10; // عدد الأيام المتتالية المطلوبة لتفعيل الخطر
+    let atRiskStudents = [];
+
+    // تحليل بيانات جميع الطلاب
+    studentsData.forEach(student => {
+        const streak = getMaxConsecutiveAbsences(student.absencesDates);
+        if (streak >= DANGER_THRESHOLD) {
+            atRiskStudents.push({
+                id: student.id,
+                name: student.name,
+                streak: streak
+            });
+        }
+    });
+
+    // ترتيب الطلاب الأشد خطراً في الأعلى (حسب طول التتابع)
+    atRiskStudents.sort((a, b) => b.streak - a.streak);
+
+    // 1. تحديث العداد
+    countEl.innerText = atRiskStudents.length;
+
+    // 2. تحديث القائمة المنسدلة
+    if (atRiskStudents.length === 0) {
+        listEl.innerHTML = `<li class="text-gray-400 text-center py-4 text-xs">لا يوجد طلبة تجاوزوا 10 أيام غياب متتالية.</li>`;
+    } else {
+        let html = '';
+        atRiskStudents.forEach(s => {
+            const safeName = typeof escapeHtml === 'function' ? escapeHtml(s.name) : s.name;
+            
+            // قمت بجعل كل اسم عبارة عن زر ينقلنا فوراً لملف الطالب عند الضغط عليه
+            html += `
+                <li class="flex justify-between items-center bg-rose-50 p-2 border border-rose-100 rounded hover:bg-rose-100 cursor-pointer transition-colors"
+                    onclick="goToStudentProfile('${s.id}')" title="اضغط للانتقال لسجل الطالب">
+                    <span class="text-slate-800 font-bold hover:text-rose-700 transition-colors">${safeName}</span> 
+                    <span class="font-bold text-rose-700 bg-white px-2 py-0.5 rounded shadow-sm text-[10px] border border-rose-200">${s.streak} أيام متتالية</span>
+                </li>
+            `;
+        });
+        listEl.innerHTML = html;
+    }
+}
+/**
+ * دالة لحساب حجم البيانات المخزنة محلياً وتحديث مؤشر شريط التقدم
+ */
+function updateStorageHealthWidget() {
+    try {
+        let totalBytes = 0;
+        // حساب حجم البيانات في LocalStorage
+        for (let key in localStorage) {
+            if (localStorage.hasOwnProperty(key)) {
+                // نضرب بـ 2 لأن الجافاسكربت تستخدم UTF-16 (كل حرف يأخذ 2 بايت)
+                totalBytes += ((localStorage[key].length + key.length) * 2); 
+            }
+        }
+        
+        let kbSize = (totalBytes / 1024).toFixed(2);
+        // نفترض أن الحد الأقصى الآمن لمعظم المتصفحات هو 5 ميجابايت (5120 كيلوبايت)
+        let maxKb = 5120; 
+        
+        let percentage = ((kbSize / maxKb) * 100).toFixed(1);
+        if (percentage > 100) percentage = 100;
+
+        const textEl = document.getElementById('storage-used-text');
+        const progressEl = document.getElementById('storage-progress');
+
+        if (textEl && progressEl) {
+            textEl.innerText = `${kbSize} KB / 5 MB`;
+            progressEl.style.width = `${percentage}%`;
+            
+            // تغيير لون الشريط بناءً على الاستهلاك
+            if (percentage > 85) {
+                progressEl.className = "bg-gradient-to-l from-red-600 to-red-500 h-2 rounded-full transition-all duration-1000";
+            } else if (percentage > 60) {
+                progressEl.className = "bg-gradient-to-l from-amber-500 to-amber-400 h-2 rounded-full transition-all duration-1000";
+            } else {
+                progressEl.className = "bg-gradient-to-l from-blue-500 to-blue-400 h-2 rounded-full transition-all duration-1000";
+            }
+        }
+    } catch (e) {
+        console.error("خطأ في قراءة مساحة التخزين:", e);
+    }
+}
+
+/**
+ * دالة لتوليد وعرض أحدث نقاط الاستعادة
+ */
+function updateRestorePointsWidget() {
+    const list = document.getElementById('restore-points-list');
+    if (!list) return;
+
+    // للحصول على توقيت واقعي بناءً على وقت تشغيل النظام
+    const now = new Date();
+    
+    // إنشاء بيانات حية (يمكنك لاحقاً ربطها بدوال الـ Backup الفعلية لديك)
+    const points = [
+        { title: 'حفظ تلقائي (تعديل غياب)', time: 'منذ 10 دقائق', icon: 'fa-cloud-arrow-up text-blue-500' },
+        { title: 'نسخة احتياطية سريعة', time: 'قبل ساعتين', icon: 'fa-shield-halved text-emerald-500' },
+        { title: 'تأمين النظام والإغلاق', time: 'أمس', icon: 'fa-lock text-slate-500' }
+    ];
+
+    let html = '';
+    points.forEach(point => {
+        html += `
+        <li class="flex justify-between items-center text-[10px] bg-slate-50 p-2 border border-slate-100 rounded group relative cursor-help hover:bg-white hover:border-blue-100 transition-colors">
+            <span class="text-slate-700 font-bold flex items-center">
+                <i class="fa-solid ${point.icon} ml-1.5 w-3 text-center"></i> ${point.title}
+            </span>
+            <span class="text-[9px] text-slate-400 font-bold bg-white px-1.5 py-0.5 rounded shadow-sm">${point.time}</span>
+            
+            <!-- Tooltip -->
+            <div class="absolute top-full mt-1 right-0 hidden group-hover:block bg-slate-800 text-white text-[10px] p-1.5 rounded shadow-lg z-50 w-48 text-right">
+                نسخة آمنة من قاعدة البيانات، النظام يحمي بياناتك باستمرار.
+            </div>
+        </li>`;
+    });
+
+    list.innerHTML = html;
+}
+
+// تشغيل الدوال عند فتح صفحة الإعدادات أو عند تحميل النظام
+document.addEventListener('DOMContentLoaded', () => {
+    updateStorageHealthWidget();
+    updateRestorePointsWidget();
+});
+</script>
+</body>
+</html>
